@@ -1,0 +1,1692 @@
+/*
+  iKeeper – wygląd jak Notatki Apple (Mac i iCloud): inteligentna kartka papieru.
+  Zasady: X:\03 --- How I Prompt\03 --- Temp (wytyczne Apple, czytelność, 12 zasad bez wyglądu KDE)
+  i wzorzec THIS IS THE WAY. Projekt i liczby: 07 --- Zadania i projekty\17-wyglad-apple.md.
+
+  Układ: pasek boczny | lista | kartka. Na widoku tylko rzeczy codzienne, rzadkie są w menu Więcej.
+  Bez etykiet, kolorów notatek i plakietek (zostają w danych). Kolory tylko jako role w dwóch blokach:
+  jasny z palety Apple, ciemny to czerń (reguła Jacka). Jeden kolor naraz: niebieski Apple znaczy
+  „nowa notatka, włączone, fokus, przycisk główny”, reszta jest szara. Motyw zawsze za systemem.
+  Pismo: jeden krój, trzy rozmiary (13 / 16 / 24 px), dwie grubości (400 / 600). Odstępy co 4 i 8 px.
+  Kontrast każdej pary liczy narzedzia\kontrast.ps1 (tekst 4,5:1, grafika 3:1).
+
+  Krój: Inter 4 (zmienny, z osią rozmiaru optycznego 14–32), najbliższy darmowy odpowiednik SF Pro
+  – SF Pro ma licencję tylko na sprzęt Apple. Przy 24 px przeglądarka sama bierze kształt „Display”,
+  jak SF Pro Display w tytułach u Apple. Odstępy liter jak w SF: według „dynamic metrics” Intera
+  (16 px −0,011 em, 24 px −0,019 em, 13 px 0). Copyright (c) 2016 The Inter Project Authors,
+  SIL Open Font License 1.1 – pełna licencja w czcionki/inter-licencja-ofl.txt.
+*/
+
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 100 900; font-display: swap; src: url("czcionki/inter-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 100 900; font-display: swap; src: url("czcionki/inter-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Inter"; font-style: italic; font-weight: 100 900; font-display: swap; src: url("czcionki/inter-kursywa-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Inter"; font-style: italic; font-weight: 100 900; font-display: swap; src: url("czcionki/inter-kursywa-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+
+:root {
+  color-scheme: light dark;
+  --szer-paska: 13.5rem;
+  --szer-listy: 20rem;
+  --naglowek-wys: 3rem;
+  --dol-wys: 0px;
+  --promien: 8px;
+  --promien-wiersza: 10px;
+  --promien-karty: 12px;
+  --gruby: 600;
+  /* Trzy rozmiary pisma, zmierzone w Notatkach iCloud (main.css aplikacji notes3, 12.10.2026):
+     15 px drugi plan (data, podgląd, foldery), 17 px treść i tytuł w liście, 28 px tytuł kartki.
+     Odstęp liter z „dynamic metrics” Intera, żeby gęstość była jak w SF. */
+  --maly: 0.9375rem;
+  --tresc: 1.0625rem;
+  --tytul: 1.75rem;
+  --sledzenie-maly: -0.009em;
+  --sledzenie-tresc: -0.013em;
+  --sledzenie-tytul: -0.021em;
+}
+
+/* --- jasny: paleta systemowa Apple --- */
+:root, :root[data-motyw="jasny"] {
+  color-scheme: light;
+  --plyta: #ffffff;
+  --podklad: #f5f5f7;
+  --grupa: #ffffff;
+  --pole: #efeff1;
+  --tekst: #1d1d1f;
+  --drugi-plan: #636366;
+  --obwodka: #e5e5ea;
+  --obwodka-okna: #d1d1d6;
+  --akcent: #0071e3;
+  --link: #0066cc;
+  --glowny: #0071e3;
+  --na-glownym: #ffffff;
+  --wybrany: #e5e5ea;
+  --najechanie: #f2f2f7;
+  --przycisk: rgb(118 118 128 / 0.12);
+  --przycisk-najechanie: rgb(118 118 128 / 0.2);
+  --przycisk-wcisniety: rgb(118 118 128 / 0.28);
+  --obrys-kontrolki: #8e8e93;
+  --obrys-galki: #636366;
+  --przelacznik-wyl: #e9e9eb;
+  --przelacznik-wl: #0071e3;
+  --galka: #ffffff;
+  --blad: #d70015;
+  --ostrzezenie-tlo: #fff4d6;
+  --baner-tlo: #eef4fd;
+  --trafienie-tlo: #ffd60a;
+  --trafienie-tekst: #1d1d1f;
+  --dodane-tlo: #dcf5e3;
+  --usuniete-tlo: #fde3e2;
+  --osd-tlo: rgb(29 29 31 / 0.94);
+  --osd-tekst: #ffffff;
+  --osd-najechanie: rgb(255 255 255 / 0.16);
+  --osd-przycisk: rgb(255 255 255 / 0.12);
+  --cien: rgb(0 0 0 / 0.14);
+  --zaslona: rgb(0 0 0 / 0.24);
+  --zamknij-okno-tlo: #c42b1c;
+  --zamknij-okno-tekst: #ffffff;
+  --suwak: rgb(29 29 31 / 0.5);
+  /* Formatowanie treści: te same 11 kolorów Apple co kafelki (iOS 26). Kolor tekstu to wersja Apple ze zwiększonym
+     kontrastem, w jasnym motywie o 10% głębsza, żeby czytała się także na każdym wyróżnieniu. Wyróżnienie to kolor Apple
+     rozjaśniony do pastelu. Każdą parę liczy narzedzia\kontrast.ps1. */
+  --k-czerwony: #d21328;
+  --k-pomaranczowy: #b14b00;
+  --k-zolty: #915f00;
+  --k-zielony: #00792c;
+  --k-mietowy: #007869;
+  --k-blekitny: #00719d;
+  --k-niebieski: #1b63dc;
+  --k-fioletowy: #a92dba;
+  --k-rozowy: #d01045;
+  --k-brazowy: #866249;
+  --k-szary: #68686c;
+  --t-czerwony: #ffe7e8;
+  --t-pomaranczowy: #ffe9d6;
+  --t-zolty: #ffeda3;
+  --t-zielony: #d6f4de;
+  --t-mietowy: #cff5f1;
+  --t-blekitny: #cff3fb;
+  --t-niebieski: #def0ff;
+  --t-fioletowy: #f9e8fc;
+  --t-rozowy: #ffe8ec;
+  --t-brazowy: #f3ece7;
+  --t-szary: #ededee;
+  /* Tabela: cienkie linie jak w Notatkach Apple, a „szerokie, przezroczyste” to szare wypełnienie Apple. */
+  --linia-tabeli: #d1d1d6;
+  --linia-szeroka: rgb(118 118 128 / 0.12);
+  /* Wygląd macOS 27 (15.10.2026): pasek boczny, lista kafelków na szarym tle i biała kartka. Trzy stopnie jasności
+     i wyraźniejsza kreska oddzielają kolumny (Jacek: „separacja większa”). */
+  --pasek-tlo: #ececf0;
+  --tlo-listy: #f4f4f7;
+  --kreska-kolumny: #d1d1d6;
+  --kreska-uchwytu: #7c7c80;
+  --wybrany-pasek: rgb(0 113 227 / 0.14);
+  /* Przycisk zabarwiony (Porządki AI): tło akcentu i napis w kolorze linku, co najmniej 4,5:1 na karcie i na szarym tle. */
+  --zabarwiony-tlo: rgb(0 113 227 / 0.12);
+  --zabarwiony-tlo-kursor: rgb(0 113 227 / 0.17);
+  --zabarwiony-tekst: #005bbf;
+  --pole-szukania: #ffffff;
+  /* Kafelek notatki ze szkła (Jacek, 15.10.2026: „Liquid glass… w tych kafelkach, na razie słabiutko”, 17.10.2026: „tak”),
+     jak kafelki Sesji Kiro 0.43.0, ale tylko to, co niesie szkło: odblask na rancie, jasny u góry z lewej i u dołu z prawej,
+     i jaśniejsze lico u góry. Do tego jasna krawędź u góry, ciemniejsza u dołu i lekki cień. Kafelek jest o włos szarszy
+     od bieli, żeby odblask było widać. Lico jest kolorem, bo kontrast liczy z niego narzedzia\kontrast.ps1. */
+  --kafel: #ffffff;
+  --kafel-blask: rgb(255 255 255 / 0.95);
+  --kafel-brzeg: rgb(0 0 0 / 0.11);
+  --kafel-cien: 0 1px 2px rgb(0 0 0 / 0.06), 0 4px 14px -4px rgb(0 0 0 / 0.16);
+  --kafel-lico: rgb(255 255 255 / 0.5);
+  --kafel-rant: linear-gradient(160deg, #ffffff, rgb(255 255 255 / 0.4) 25%, rgb(255 255 255 / 0) 50%, rgb(255 255 255 / 0.35) 80%, rgb(255 255 255 / 0.9));
+  --nakladka: rgb(0 0 0 / 0.04);
+  --drugi-plan-kafla: #48484a;
+  /* Kolory notatek z palety systemowej Apple (iOS 26, macOS 26): pełny na próbce w menu, na kafelku z przezroczystością
+     dobraną tak, żeby drugi plan miał co najmniej 6:1, także pod kursorem. Klucze jak w Google Keep (rdzeń, model.rs). */
+  --p-czerwony: #ff383c; --n-czerwony: #ffd3d4;
+  --p-pomaranczowy: #ff8d28; --n-pomaranczowy: #ffe1c7;
+  --p-zolty: #ffcc00; --n-zolty: #ffea94;
+  --p-zielony: #34c759; --n-zielony: #caf0d4;
+  --p-mietowy: #00c8b3; --n-mietowy: #bdf1eb;
+  --p-blekitny: #00c0e8; --n-blekitny: #bdeff9;
+  --p-niebieski: #0088ff; --n-niebieski: #c7e5ff;
+  --p-fioletowy: #cb30e0; --n-fioletowy: #f5d6f9;
+  --p-rozowy: #ff2d55; --n-rozowy: #ffd5dd;
+  --p-brazowy: #ac7f5e; --n-brazowy: #e9ded5;
+  --p-szary: #8e8e93; --n-szary: #e2e2e3;
+  /* Szkło w warstwie nawigacji i kapsułki narzędzi. „Najgorsze” to tło do pomiaru kontrastu: czerń pod jasnym szkłem. */
+  --szklo: rgb(255 255 255 / 0.8);
+  --szklo-blask: rgb(255 255 255 / 0.9);
+  --szklo-brzeg: rgb(0 0 0 / 0.12);
+  --szklo-najgorsze: #000000;
+  --drugi-plan-szkla: #48484a;
+  --blad-szkla: #b0000f;
+  --kapsula: #ffffff;
+  --kapsula-cien: 0 0 0 0.5px rgb(0 0 0 / 0.16), 0 1px 3px rgb(0 0 0 / 0.08), 0 4px 12px -6px rgb(0 0 0 / 0.14);
+  --dymek-tlo: #ffffff;
+  --dymek-brzeg: rgb(0 0 0 / 0.14);
+  /* Trafienie z szukania w otwartej notatce (17.10.2026): fiolet szukania #a843db, spokojny i w szczycie pulsu. */
+  --trafienie-spokojne: rgb(168 67 219 / 0.16);
+  --trafienie-puls: rgb(168 67 219 / 0.42);
+  --trafienie-poswiata: rgb(168 67 219 / 0.32);
+  /* Głębia przycisków (wzorzec THIS IS THE WAY, Jacek, 16.10.2026: „buttons must look and feel like buttons, not naklejki”):
+     włosek 12% czerni, jasna krawędź u góry i miękki cień w dwóch warstwach. Główny przycisk świeci lekko w swoim kolorze. */
+  --przycisk-cien: inset 0 1px 0 rgb(255 255 255 / 0.75), 0 0 0 0.5px rgb(0 0 0 / 0.12), 0 1px 2px rgb(0 0 0 / 0.06), 0 2px 6px -2px rgb(0 0 0 / 0.10);
+  --przycisk-cien-najechanie: inset 0 1px 0 rgb(255 255 255 / 0.75), 0 0 0 0.5px rgb(0 0 0 / 0.14), 0 2px 4px rgb(0 0 0 / 0.08), 0 4px 12px -3px rgb(0 0 0 / 0.14);
+  --przycisk-cien-wcisniety: inset 0 1px 2px rgb(0 0 0 / 0.10), 0 0 0 0.5px rgb(0 0 0 / 0.14);
+  --glowny-cien: inset 0 1px 0 rgb(255 255 255 / 0.25), 0 0 0 0.5px rgb(0 0 0 / 0.14), 0 1px 2px rgb(0 0 0 / 0.10), 0 4px 12px -4px rgb(0 113 227 / 0.55);
+  --osd-przycisk-cien: inset 0 1px 0 rgb(255 255 255 / 0.12), 0 0 0 0.5px rgb(255 255 255 / 0.22);
+  --kafel-cien-najechanie: 0 2px 4px rgb(0 0 0 / 0.07), 0 8px 20px -6px rgb(0 0 0 / 0.20);
+}
+
+/* --- ciemny: czerń (reguła Jacka), akcenty z ciemnej palety Apple --- */
+:root[data-motyw="ciemny"] {
+  color-scheme: dark;
+  --plyta: #000000;
+  --podklad: #000000;
+  --grupa: #1c1c1e;
+  --pole: #1c1c1e;
+  --tekst: #ffffff;
+  --drugi-plan: #c0bfbc;
+  --obwodka: #2c2c2e;
+  --obwodka-okna: #48484a;
+  --akcent: #409cff;
+  --link: #409cff;
+  --glowny: #0071e3;
+  --na-glownym: #ffffff;
+  --wybrany: #2c2c2e;
+  --najechanie: #1c1c1e;
+  --przycisk: rgb(118 118 128 / 0.24);
+  --przycisk-najechanie: rgb(118 118 128 / 0.32);
+  --przycisk-wcisniety: rgb(118 118 128 / 0.44);
+  --obrys-kontrolki: #8e8e93;
+  --obrys-galki: #8e8e93;
+  --przelacznik-wyl: #39393d;
+  --przelacznik-wl: #0071e3;
+  --galka: #ffffff;
+  --blad: #ff6961;
+  --ostrzezenie-tlo: #3a2e05;
+  --baner-tlo: #0d2440;
+  --trafienie-tlo: #ffd60a;
+  --trafienie-tekst: #000000;
+  --dodane-tlo: #133d22;
+  --usuniete-tlo: #4d1714;
+  --osd-tlo: #2c2c2e;
+  --osd-tekst: #ffffff;
+  --osd-najechanie: rgb(255 255 255 / 0.16);
+  --osd-przycisk: rgb(255 255 255 / 0.12);
+  --cien: rgb(0 0 0 / 0.6);
+  --zaslona: rgb(0 0 0 / 0.6);
+  --suwak: rgb(255 255 255 / 0.5);
+  --k-czerwony: #ff6165;
+  --k-pomaranczowy: #ffa056;
+  --k-zolty: #fedf43;
+  --k-zielony: #4ad968;
+  --k-mietowy: #54dfcb;
+  --k-blekitny: #6dd9ff;
+  --k-niebieski: #5cb8ff;
+  --k-fioletowy: #ea8dff;
+  --k-rozowy: #ff8ac4;
+  --k-brazowy: #dba679;
+  --k-szary: #aeaeb2;
+  --t-czerwony: #521516;
+  --t-pomaranczowy: #40250c;
+  --t-zolty: #332b00;
+  --t-zielony: #0c3215;
+  --t-mietowy: #00322d;
+  --t-blekitny: #0d2e38;
+  --t-niebieski: #002d4f;
+  --t-fioletowy: #481150;
+  --t-rozowy: #54121f;
+  --t-brazowy: #35281e;
+  --t-szary: #2b2b2c;
+  --linia-tabeli: #48484a;
+  --linia-szeroka: rgb(118 118 128 / 0.28);
+  --pasek-tlo: #000000;
+  --tlo-listy: #000000;
+  --kreska-kolumny: #48484a;
+  --kreska-uchwytu: #636366;
+  --wybrany-pasek: rgb(64 156 255 / 0.22);
+  --zabarwiony-tlo: rgb(64 156 255 / 0.18);
+  --zabarwiony-tlo-kursor: rgb(64 156 255 / 0.26);
+  --zabarwiony-tekst: #409cff;
+  --pole-szukania: #1c1c1e;
+  --kafel: #000000;
+  --kafel-blask: rgb(255 255 255 / 0.22);
+  --kafel-brzeg: rgb(255 255 255 / 0.07);
+  --kafel-cien: none;
+  /* W ciemnym szkło to sam rant: lica na czerni prawie nie widać, a rozjaśniałoby tło pod drugim planem. */
+  --kafel-lico: rgb(255 255 255 / 0);
+  --kafel-rant: linear-gradient(160deg, rgb(255 255 255 / 0.3), rgb(255 255 255 / 0.08) 25%, rgb(255 255 255 / 0) 50%, rgb(255 255 255 / 0.05) 80%, rgb(255 255 255 / 0.18));
+  --nakladka: rgb(255 255 255 / 0.08);
+  --drugi-plan-kafla: #c0bfbc;
+  --p-czerwony: #ff4245; --n-czerwony: #421112;
+  --p-pomaranczowy: #ff9230; --n-pomaranczowy: #42260c;
+  --p-zolty: #ffd600; --n-zolty: #473c00;
+  --p-zielony: #30d158; --n-zielony: #0c3617;
+  --p-mietowy: #00dac3; --n-mietowy: #003933;
+  --p-blekitny: #3cd3fe; --n-blekitny: #103742;
+  --p-niebieski: #0091ff; --n-niebieski: #002642;
+  --p-fioletowy: #db34f2; --n-fioletowy: #390e3f;
+  --p-rozowy: #ff375f; --n-rozowy: #420e19;
+  --p-brazowy: #b78a66; --n-brazowy: #30241b;
+  --p-szary: #8e8e93; --n-szary: #252526;
+  --szklo: rgb(22 22 24 / 0.82);
+  --szklo-blask: rgb(255 255 255 / 0.10);
+  --szklo-brzeg: rgb(255 255 255 / 0.14);
+  --szklo-najgorsze: #ffffff;
+  --drugi-plan-szkla: #d1d1d6;
+  --blad-szkla: #ff9a91;
+  --kapsula: rgb(255 255 255 / 0.07);
+  --kapsula-cien: inset 0 1px 0 rgb(255 255 255 / 0.10), 0 0 0 0.5px rgb(255 255 255 / 0.18);
+  --dymek-tlo: #1c1c1e;
+  --dymek-brzeg: rgb(255 255 255 / 0.18);
+  --trafienie-spokojne: rgb(168 67 219 / 0.34);
+  --trafienie-puls: rgb(168 67 219 / 0.62);
+  --trafienie-poswiata: rgb(168 67 219 / 0.5);
+  /* W ciemnym zostaje włosek 16% bieli i jasna krawędź u góry, bo cienia na czerni nie widać. */
+  --przycisk-cien: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 0 0 0.5px rgb(255 255 255 / 0.16);
+  --przycisk-cien-najechanie: inset 0 1px 0 rgb(255 255 255 / 0.12), 0 0 0 0.5px rgb(255 255 255 / 0.24);
+  --przycisk-cien-wcisniety: 0 0 0 0.5px rgb(255 255 255 / 0.16);
+  --glowny-cien: inset 0 1px 0 rgb(255 255 255 / 0.22), 0 0 0 0.5px rgb(255 255 255 / 0.18), 0 2px 12px -2px rgb(0 113 227 / 0.6);
+  --osd-przycisk-cien: inset 0 1px 0 rgb(255 255 255 / 0.12), 0 0 0 0.5px rgb(255 255 255 / 0.22);
+  --kafel-cien-najechanie: none;
+}
+
+/* --- podstawy --- */
+* { box-sizing: border-box; }
+html { font-size: 100%; height: 100%; }
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--plyta);
+  color: var(--tekst);
+  /* Znaki, których Inter nie ma (np. ☐), bierze krój systemu. */
+  font-family: "Inter", system-ui, "Segoe UI", sans-serif;
+  font-size: var(--tresc);
+  /* Interlinia w całych pikselach (22 px, Body 17/22 Apple): przy skali 150 % wiersze stoją w równych odstępach.
+     Ułamkowa (1,4 = 23,8 px) dawała co któryś odstęp o piksel inny. */
+  line-height: 1.375rem;
+  letter-spacing: var(--sledzenie-tresc);
+  -webkit-font-smoothing: antialiased;
+}
+/* Przyciski i pola dostają te same odstępy liter co reszta (przeglądarka daje im „normal”). */
+button, input, select, textarea { letter-spacing: inherit; }
+[hidden] { display: none !important; }
+
+/* Paski przewijania przy myszy: cienkie i schowane, póki kursor nie stanie nad przewijanym
+   miejscem. Miejsce na pasek jest zawsze, więc tekst nie skacze. Standardowe właściwości, bo
+   ::-webkit-scrollbar-thumb przy :hover rodzica Chromium pokazuje dopiero na samym pasku
+   (sprawdzone w WebView2 154). Na dotyku zostaje pasek systemu, który znika sam. */
+@media (hover: hover) and (pointer: fine) {
+  * { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+  :hover { scrollbar-color: var(--suwak) transparent; }
+}
+/* Przestawianie (js/kolejnosc.js): przeciągany przygasa, a jedna kreska 2 px w kolorze linku stoi w połowie przerwy,
+   w której stanie (.kreska-celu, koniec pliku). Kreski z cienia w krawędzi przycisku tu nie ma: przegrywała z cieniem
+   pigułek i okrągłych przycisków, więc przy nich jej nie było widać (22.10.2026). */
+.przestawiany { opacity: 0.4; }
+.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+.bez-odstepu { padding: 0 !important; }
+.rozpychacz { flex: 1; }
+p, h1, h2, h3, h4, ul { margin: 0; }
+ul { padding: 0; list-style: none; }
+a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+
+/* Trzy rozmiary pisma: 15 px drugi plan, 17 px treść, 28 px tytuł kartki. Dwie grubości. */
+.heading, .title-4 { font-size: var(--tresc); font-weight: var(--gruby); }
+.caption, .caption-heading, kbd { font-size: var(--maly); line-height: 1.25rem; letter-spacing: var(--sledzenie-maly); }
+.caption-heading { font-weight: var(--gruby); }
+.title-1, .title-2 { font-size: var(--tytul); font-weight: var(--gruby); line-height: 2.125rem; letter-spacing: var(--sledzenie-tytul); }
+.przygaszony { color: var(--drugi-plan); }
+.niszczacy { color: var(--blad); }
+.numeric { font-variant-numeric: tabular-nums; }
+kbd { font: inherit; font-size: var(--maly); letter-spacing: var(--sledzenie-maly); color: var(--drugi-plan); }
+/* Na dotyku bez klawiatury skrót przy pozycji menu nic nie mówi. Godzina przy gotowym terminie zostaje. */
+@media (hover: none) { kbd.skrot { display: none; } }
+.tylko-czytnik { position: absolute; top: 0; left: 0; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+mark { background: var(--trafienie-tlo); color: var(--trafienie-tekst); border-radius: 3px; box-shadow: 0 0 0 1px var(--trafienie-tlo); }
+
+/* --- ikony: liniowe, jednokolorowe --- */
+svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+svg.i.pelna { fill: currentColor; }
+svg.i.duza { width: 48px; height: 48px; stroke-width: 1; }
+
+/* --- przyciski: kapsułki jak w Apple --- */
+button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  border-radius: 999px;
+  background: var(--przycisk);
+  padding: 0 1rem;
+  min-height: 2rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+button:hover { background: var(--przycisk-najechanie); }
+button:active { background: var(--przycisk-wcisniety); }
+button:disabled { opacity: 0.4; cursor: default; }
+/* Przycisk, a nie naklejka (Jacek, 16.10.2026, reguła `przyciski-zawsze-jak-przyciski.md`): głębia w spoczynku, pod kursorem
+   unosi się o 1 px, wciśnięty zapada się o 4%. Nic poza nim się nie rusza (translate i scale nie zmieniają układu).
+   :where() zostawia zerową wagę, więc każda rzecz z własnym cieniem albo bez kształtu ustawia swoje. */
+:where(button) { box-shadow: var(--przycisk-cien); transition: background-color 120ms ease, box-shadow 120ms ease, translate 120ms ease, scale 80ms ease; }
+:where(button:hover:not(:disabled)) { box-shadow: var(--przycisk-cien-najechanie); translate: 0 -1px; }
+:where(button:active:not(:disabled)) { box-shadow: var(--przycisk-cien-wcisniety); translate: none; scale: 0.96; }
+/* To nie są przyciski z kształtem: wiersze menu i listy wersji, kółka kolorów (kształt ma próbka), przyciski okna Windows,
+   uchwyt pozycji i krzyżyk w polu szukania (kształt daje pole). */
+.menu-pozycja, .paleta-kolor, .przyciski-okna button, .historia-lista button, .wiersz.przycisk-wiersz, .e-pozycja .uchwyt, .szukajka .wyczysc { box-shadow: none; translate: none; scale: none; }
+.szukajka .wyczysc:active:not(:disabled) { scale: 0.92; }
+.paleta-kolor:active .probka { transform: scale(0.9); }
+:focus-visible { outline: 2px solid var(--akcent); outline-offset: 2px; }
+/* Jeden wyróżniony przycisk na widok: niebieski Apple z białym napisem (4,7:1). */
+.sugerowany, .sugerowany:hover { background: var(--glowny); color: var(--na-glownym); font-weight: var(--gruby); box-shadow: var(--glowny-cien); }
+.sugerowany:hover { filter: brightness(1.08); }
+.sugerowany:active { filter: brightness(0.92); }
+.pigulka { min-height: 2.5rem; padding: 0 1.5rem; font-weight: var(--gruby); }
+/* Przycisk z samą ikoną: szary symbol na szarym kole także bez kursora (Jacek, 16.10.2026: przyciski wyglądają jak przyciski
+   zawsze, bo na telefonie kursora nie ma). Kursor koło tylko wzmacnia. Ikona, której nie da się kliknąć (stan synchronizacji),
+   koła nie ma. :where() zostawia niską wagę, więc przyciski z własnym tłem (podgląd obrazu, usuwanie obrazu) zostają przy swoim. */
+.ikona { width: 2rem; height: 2rem; min-height: 0; padding: 0; border-radius: 50%; background: transparent; color: var(--drugi-plan); }
+:where(button).ikona { background: var(--przycisk); }
+:where(button).ikona:hover { background: var(--przycisk-najechanie); color: var(--tekst); }
+:where(button).ikona:active { background: var(--przycisk-wcisniety); }
+.ikona svg.i { width: 20px; height: 20px; stroke-width: 1.4; }
+/* Nowa notatka: jedyna rzecz stale w kolorze akcentu. */
+.ikona.akcent, .ikona.akcent:hover { color: var(--akcent); }
+/* Włączone (jest przypomnienie, formatowanie otwarte): symbol w akcencie na kole zabarwionym akcentem, więc różni się
+   od zwykłego wypełnieniem, a nie samym kolorem symbolu. */
+.ikona.wlaczony, .ikona[aria-expanded="true"] { background: var(--wybrany-pasek); color: var(--akcent); }
+
+/* --- pola --- */
+input[type="text"], input[type="search"], input[type="password"], input[type="number"], input[type="datetime-local"], input[type="url"], select, textarea {
+  font: inherit;
+  color: inherit;
+  background: var(--pole);
+  border: 0;
+  border-radius: var(--promien);
+  padding: 0 0.75rem;
+  min-height: 2rem;
+}
+input::placeholder, textarea::placeholder { color: var(--drugi-plan); }
+select option { background: var(--plyta); color: var(--tekst); }
+/* Pola samej kartki: obwódka obrysowałaby całą notatkę i nic nie wnosi – widać kursor. */
+.e-tytul:focus-visible, .e-tekst:focus-visible, .e-pozycja input:focus-visible { outline: none; }
+/* Kontenery, które przyjmują fokus tylko po to, żeby dało się je przewijać klawiaturą. */
+#tresc:focus, #kolumna-listy:focus, .popover:focus { outline: none; }
+
+/* Przełącznik jak w macOS: włączony niebieski z białą gałką (4,7:1), wyłączony jasnoszary z szarą
+   obwódką toru (3,3:1 na białym) i ciemniejszą obwódką gałki (4,9:1 na torze), żeby stan było widać. */
+input[role="switch"] {
+  appearance: none; flex: none; position: relative; width: 2.75rem; height: 1.625rem; margin: 0;
+  border-radius: 999px; background: var(--przelacznik-wyl); box-shadow: inset 0 0 0 1px var(--obrys-kontrolki); cursor: pointer;
+  transition: background 160ms ease;
+}
+input[role="switch"]::before {
+  content: ""; position: absolute; top: 0.125rem; left: 0.125rem; width: 1.375rem; height: 1.375rem;
+  border-radius: 50%; background: var(--galka); box-shadow: 0 0 0 1px var(--obrys-galki); transition: left 160ms ease;
+}
+input[role="switch"]:checked { background: var(--przelacznik-wl); box-shadow: none; }
+input[role="switch"]:checked::before { left: 1.25rem; box-shadow: none; }
+input[role="switch"]:disabled { opacity: 0.4; cursor: default; }
+
+/* Pole wyboru to zaokrąglony kwadrat, jak w panelu Sesji Kiro (Jacek, 21.10.2026: kwadraciki zamiast kółek):
+   zrobione to niebieski kwadracik z białym ptaszkiem. */
+input[type="checkbox"]:not([role="switch"]) {
+  appearance: none; flex: none; width: 1.25rem; height: 1.25rem; margin: 0; border-radius: 0.3125rem;
+  border: 1.5px solid var(--obrys-kontrolki); background: transparent; cursor: pointer; display: grid; place-items: center;
+}
+input[type="checkbox"]:not([role="switch"]):checked,
+input[type="checkbox"]:not([role="switch"]):indeterminate { background: var(--glowny); border-color: var(--glowny); }
+input[type="checkbox"]:not([role="switch"]):checked::after {
+  content: ""; width: 0.3125rem; height: 0.5625rem; border: solid var(--na-glownym); border-width: 0 2px 2px 0; transform: translateY(-1px) rotate(45deg);
+}
+input[type="checkbox"]:not([role="switch"]):indeterminate::after { content: ""; width: 0.5rem; height: 2px; background: var(--na-glownym); }
+input[type="radio"] { accent-color: var(--glowny); width: 1rem; height: 1rem; margin: 0; }
+
+/* --- okno: pasek u góry, banery, trzy kolumny, pasek zaznaczania, dolny pasek telefonu --- */
+.okno { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto auto; height: 100vh; height: 100dvh; }
+
+/* Pasek u góry w trzech częściach, każda nad swoją kolumną. Pasek boczny idzie od góry do dołu okna,
+   jak w Notatkach na Macu; pod listą i kartką cienka kreska. */
+.naglowek {
+  position: relative;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: var(--szer-paska) var(--szer-listy) minmax(0, 1fr) auto;
+  min-height: var(--naglowek-wys);
+  background: var(--plyta);
+  user-select: none;
+}
+.n-pasek, .n-lista, .n-tresc { display: flex; align-items: center; gap: 0.25rem; min-width: 0; }
+.n-pasek { padding: 0 0.5rem; background: var(--pasek-tlo); box-shadow: inset -1px 0 var(--kreska-kolumny); }
+.n-lista { padding: 0 0.5rem; background: var(--tlo-listy); box-shadow: inset -1px -1px var(--kreska-kolumny); }
+.n-tresc { padding: 0 0.5rem 0 0.75rem; box-shadow: inset 0 -1px var(--kreska-kolumny); }
+.przyciski-okna { box-shadow: inset 0 -1px var(--kreska-kolumny); }
+.naglowek-tytul { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 0.5rem; }
+#nowa { flex: none; }
+.nowa-notatka { gap: 0.375rem; min-height: 2rem; padding: 0 0.875rem 0 0.625rem; white-space: nowrap; }
+.nowa-notatka svg.i { width: 14px; height: 14px; stroke-width: 2.2; }
+.przyciski-edytora, .narzedzia { display: flex; align-items: center; gap: 0.25rem; }
+.narzedzia { position: relative; }
+#stan-sync { display: inline-flex; align-items: center; justify-content: center; color: var(--drugi-plan); }
+.przyciski-okna { display: flex; align-self: stretch; }
+.przyciski-okna button { width: 2.875rem; height: 100%; min-height: var(--naglowek-wys); border-radius: 0; background: transparent; padding: 0; color: var(--tekst); }
+.przyciski-okna button:hover { background: var(--przycisk); }
+.przyciski-okna button.zamknij-okno:hover { background: var(--zamknij-okno-tlo); color: var(--zamknij-okno-tekst); }
+.przyciski-okna svg.i { width: 16px; height: 16px; stroke-width: 1.2; }
+body.android .przyciski-okna, body.web .przyciski-okna { display: none; }
+/* Wstecz tylko tam, gdzie lista i kartka nie stoją obok siebie. */
+#wstecz { display: none; }
+
+.szukajka { position: relative; display: flex; align-items: center; flex: 1; min-width: 0; }
+.szukajka > svg.i { position: absolute; left: 0.625rem; color: var(--drugi-plan); pointer-events: none; }
+/* Szukanie w kapsułce, jak pole szukania w paskach narzędzi Apple. */
+.szukajka input { width: 100%; padding-left: 2rem; padding-right: 2rem; border-radius: 999px; background: var(--pole-szukania); box-shadow: var(--kapsula-cien); font-size: var(--maly); letter-spacing: var(--sledzenie-maly); }
+.szukajka input::-webkit-search-cancel-button { display: none; }
+.szukajka .wyczysc { position: absolute; right: 0; width: 2rem; height: 2rem; }
+/* Pole szukania o stopień niższe od przycisków obok (Jacek, 21.10.2026: „trochę za duże”). Na telefonie zostaje 48 px. */
+@media (min-width: 761px) { .szukajka input { min-height: 1.875rem; } .szukajka .wyczysc { height: 1.875rem; } }
+
+/* Formatowanie: okienko pod przyciskiem Aa. */
+.panel-formatu {
+  position: absolute; top: calc(100% + 0.5rem); left: 0; z-index: 40;
+  padding: 0.5rem; border-radius: var(--promien-karty); background: var(--plyta);
+  box-shadow: 0 0 0 1px var(--obwodka-okna), 0 12px 32px var(--cien);
+}
+/* Przyciski formatowania z przerwą 8 px, a nie na styk (reguła `oddech-wszedzie.md`). */
+.pasek-formatu { display: flex; gap: 0.5rem; }
+.pasek-formatu .ikona { border-radius: var(--promien); color: var(--tekst); }
+.fmt-litery { font-size: var(--tresc); line-height: 1; }
+.fmt-kolor-ikona { border-bottom: 3px solid var(--akcent); }
+.fmt-tlo-ikona { background: var(--trafienie-tlo); color: var(--trafienie-tekst); padding: 0 0.25rem; border-radius: 3px; }
+.pasek-formatu .fmt[aria-pressed="true"] { background: var(--wybrany-pasek); color: var(--akcent); }
+
+/* Baner u góry (ui.js, baner): tekst od lewej, mały krzyżyk z prawej, przesunięcie w bok zamyka (reguła pelny-ekran-telefon).
+   W pionie przewija się strona (touch-action), a baner jedzie za palcem tylko w bok. */
+.baner {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.5rem 0.5rem 0.5rem 1rem; background: var(--baner-tlo); box-shadow: inset 0 -1px var(--obwodka);
+  touch-action: pan-y; -webkit-user-select: none; user-select: none;
+  transition: transform 200ms cubic-bezier(0.2, 0, 0, 1), opacity 200ms ease;
+}
+.baner-tekst { flex: 1; min-width: 0; }
+/* Krzyżyk: kółko 32 px z głębią rysuje ::before w polu wypełnienia, więc na dotyku cel rośnie do 48 px przezroczystą
+   obwódką, a kółko i jego cień zostają małe (cień zewnętrzny na samym przycisku obrysowałby całe 48 px). */
+.baner .zamknij-baner {
+  position: relative; isolation: isolate; flex: none; width: 2rem; height: 2rem; min-height: 0; padding: 0;
+  background: transparent; box-shadow: none;
+}
+.baner .zamknij-baner::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  background: var(--przycisk); box-shadow: var(--przycisk-cien); transition: background-color 120ms ease, box-shadow 120ms ease;
+}
+.baner .zamknij-baner:hover::before { background: var(--przycisk-najechanie); box-shadow: var(--przycisk-cien-najechanie); }
+.baner .zamknij-baner svg.i { width: 14px; height: 14px; }
+@media (pointer: coarse) {
+  .baner .zamknij-baner { width: 3rem; height: 3rem; min-height: 0; border: 0.5rem solid transparent; margin: -0.5rem; }
+}
+.baner.ostrzezenie { background: var(--ostrzezenie-tlo); }
+/* Telefon bez pliku z komputera: prośba o połączenie nad listą (lista.js, rysujListe). */
+.polacz-telefon {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  margin: 0.5rem 0 1rem; padding: 0.75rem 0.75rem 0.75rem 1rem; border-radius: 14px;
+  background: var(--baner-tlo); box-shadow: inset 0 0 0 0.5px var(--kafel-brzeg);
+}
+.polacz-telefon .wiersz-tekst { min-width: 0; }
+.polacz-telefon .sugerowany { flex: none; }
+
+.uklad { position: relative; display: grid; grid-template-columns: var(--szer-paska) var(--szer-listy) minmax(0, 1fr); min-height: 0; }
+
+/* --- pasek boczny: widoki jak foldery w Notatkach, na dole Porządki AI i Ustawienia --- */
+.pasek-boczny {
+  display: flex; flex-direction: column; min-height: 0; overflow-y: auto; padding: 0 0.5rem 0.5rem;
+  background: var(--pasek-tlo); box-shadow: inset -1px 0 var(--kreska-kolumny); user-select: none;
+}
+/* Wiersze paska bocznego to przyciski: szara kapsułka także bez kursora, wybrany zabarwiony akcentem i pogrubiony. */
+.nawigacja { display: grid; gap: 0.5rem; }
+.nawigacja button {
+  width: 100%; min-height: 2rem; justify-content: flex-start; gap: 0.625rem; padding: 0 0.75rem 0 0.625rem;
+  border-radius: var(--promien-wiersza); background: var(--przycisk); font-size: var(--maly); letter-spacing: var(--sledzenie-maly);
+}
+/* Liczniki i ikony ciemniejsze niż zwykły drugi plan: na szarej kapsułce zwykły miałby 4,46:1. */
+.nawigacja button svg.i { width: 16px; height: 16px; color: var(--drugi-plan-kafla); }
+.nawigacja button:hover { background: var(--przycisk-najechanie); }
+/* Szeroki wiersz zapada się mniej (2%), żeby nie skakał o pół centymetra. */
+.nawigacja button:active:not(:disabled), .u-dzialy button:active:not(:disabled) { scale: 0.98; }
+/* Wybrany widok: niebieskawa kapsułka i niebieska ikona (niebieski znaczy „wybrane”), liczba w kolorze tekstu. */
+.nawigacja button:is([aria-current="page"], [aria-pressed="true"]) { background: var(--wybrany-pasek); font-weight: var(--gruby); }
+.nawigacja button:is([aria-current="page"], [aria-pressed="true"]) svg.i { color: var(--akcent); }
+.nawigacja button:is([aria-current="page"], [aria-pressed="true"]) .licznik { color: var(--tekst); }
+.nawigacja .nazwa { flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nawigacja .licznik { color: var(--drugi-plan-kafla); font-variant-numeric: tabular-nums; }
+/* Stopka paska: Porządki AI i Ustawienia, a obok nich w rogu ściąga „i” (js/sciaga.js), przygaszona jak ikony paska. */
+.stopka-paska { display: flex; align-items: flex-end; gap: 0.25rem; margin-top: auto; padding-top: 0.5rem; box-shadow: inset 0 1px var(--obwodka); }
+.stopka-paska .dol-paska { flex: 1; min-width: 0; }
+.stopka-paska .info svg.i { width: 18px; height: 18px; }
+
+/* --- lista: wiersz 64 px = tytuł 16 px półgruby + data i początek tekstu 13 px, bez kresek --- */
+.kolumna-listy {
+  min-height: 0; overflow-y: auto; padding: 0 0.5rem 1rem;
+  background: var(--tlo-listy); box-shadow: inset -1px 0 var(--kreska-kolumny);
+}
+/* 24 px między grupami, 8 px w grupie (wzorzec THIS IS THE WAY). */
+.sekcja-listy { display: flex; gap: 0.5rem; padding: 1.5rem 0.75rem 0.5rem; color: var(--drugi-plan); }
+.sekcja:first-child > .sekcja-listy { padding-top: 0.75rem; }
+.uwaga-kosza { padding: 0 0.75rem 0.5rem; }
+/* Nazwa widoku nad listą tylko wtedy, gdy paska bocznego nie widać – inaczej mówi to pasek. */
+@media (min-width: 1101px) {
+  body:not(.bez-paska) .nazwa-widoku { display: none; }
+  body:not(.bez-paska) .uwaga-kosza { padding-top: 0.5rem; }
+}
+/* 12 px między kafelkami, jak w panelu Sesji Kiro (Jacek, 21.10.2026: „większe odstępy”). */
+.wpisy { display: grid; gap: 0.75rem; }
+/* Kafelek notatki jak szkło Apple: jasna krawędź u góry, ciemniejsza u dołu i lekki cień (Jacek, 15.10.2026:
+   „separacja większa”, „drop shadow delikatny”). Kolor notatki barwi cały kafelek (niżej, [data-kolor]).
+   Otwarta i zaznaczone mają pierścień w akcencie, a kolor kafelka zostaje (wzorzec THIS IS THE WAY).
+   Od 17.10.2026 kafelek jest ze szkła (role --kafel-… na górze pliku). Rant to warstwa tła pod przezroczystą ramką,
+   a nie ::before, bo ::before i ::after rysują kreskę upuszczania przy przeciąganiu. */
+.wpis {
+  --kafel-tlo: var(--kafel);
+  --kafel-dol: var(--kafel-brzeg);
+  /* Warstwy od góry: lico, kolor kafelka, odblask na rancie, krawędź jasna u góry i ciemniejsza u dołu. */
+  --kafel-warstwy: linear-gradient(var(--kafel-lico), transparent 50%) padding-box, linear-gradient(var(--kafel-tlo), var(--kafel-tlo)) padding-box,
+    var(--kafel-rant) border-box, linear-gradient(to bottom, var(--kafel-blask), var(--kafel-dol)) border-box;
+  display: flex; align-items: center; gap: 0.75rem; min-height: 4rem; padding: calc(0.625rem - 1px) calc(0.75rem - 1px);
+  border: 1px solid transparent; border-radius: var(--promien-karty); cursor: pointer; outline-offset: 2px;
+  background: var(--kafel-warstwy);
+  box-shadow: var(--kafel-cien);
+  transition: translate 120ms ease, box-shadow 120ms ease;
+}
+/* Kafelek pod kursorem unosi się o 1 px, jak karty w stylu Apple. Otwarty i zaznaczone zostają przy swoim pierścieniu (niżej). */
+.wpis:hover {
+  background: linear-gradient(var(--nakladka), var(--nakladka)) padding-box, var(--kafel-warstwy);
+  box-shadow: var(--kafel-cien-najechanie); translate: 0 -1px;
+}
+.wpis[aria-current="true"], .wpis.zaznaczona { box-shadow: 0 0 0 2px var(--tlo-listy), 0 0 0 4px var(--akcent), 0 4px 12px rgb(0 0 0 / 0.14); }
+/* Na kolorze drugi plan i obrys kółka zaznaczania są o stopień mocniejsze: co najmniej 6:1 (narzedzia\kontrast.ps1). */
+.wpis[data-kolor] { --drugi-plan: var(--drugi-plan-kafla); --obrys-kontrolki: var(--drugi-plan-kafla); --kafel-dol: color-mix(in srgb, var(--kolor-pelny) 45%, transparent); }
+.wpis-tekst { flex: 1; min-width: 0; display: grid; }
+.wpis-w1 { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+/* Przeciąganie kafelków (js/lista.js): przeciągany przygasa, a kreska w akcencie pośrodku odstępu pokazuje, gdzie stanie. */
+.wpis { position: relative; }
+.wpis.przeciagana { opacity: 0.4; }
+.wpis.upusc-nad::before, .wpis.upusc-pod::after {
+  content: ""; position: absolute; left: 0.25rem; right: 0.25rem; height: 2px; border-radius: 1px;
+  background: var(--akcent); pointer-events: none;
+}
+.wpis.upusc-nad::before { top: -7px; }
+.wpis.upusc-pod::after { bottom: -7px; }
+.wpis-tytul { flex: 1; min-width: 0; font-weight: var(--gruby); line-height: 1.375rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wpis-w2 { display: flex; gap: 0.5rem; min-width: 0; font-size: var(--maly); line-height: 1.25rem; letter-spacing: var(--sledzenie-maly); white-space: nowrap; }
+.wpis-meta { flex: none; display: inline-flex; align-items: center; gap: 0.25rem; }
+.wpis-meta svg.i { width: 14px; height: 14px; }
+.wpis-podglad { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--drugi-plan); }
+.wpis-uwaga { flex: none; padding: 0 0.375rem; border-radius: 999px; background: var(--ostrzezenie-tlo); color: var(--tekst); }
+.wpis-miniatura { flex: none; width: 2.75rem; height: 2.75rem; border-radius: 6px; object-fit: cover; background: var(--przycisk); }
+/* Tryb zaznaczania: okrągłe pole wyboru na początku wiersza. */
+.wpis-znacznik { display: none; flex: none; width: 1.25rem; height: 1.25rem; border-radius: 50%; border: 1.5px solid var(--obrys-kontrolki); place-items: center; color: var(--na-glownym); }
+body.zaznaczanie .wpis-znacznik { display: grid; }
+.wpis.zaznaczona .wpis-znacznik { background: var(--glowny); border-color: var(--glowny); }
+.wpis-znacznik svg.i { width: 12px; height: 12px; stroke-width: 2.4; visibility: hidden; }
+.wpis.zaznaczona .wpis-znacznik svg.i { visibility: visible; }
+.wiecej-wynikow { height: 1px; }
+
+/* Pusta lista (widok, wynik szukania, pierwsze uruchomienie): co zrobić i przycisk do tego. */
+.zastepcza { display: grid; justify-items: center; gap: 0.75rem; padding: 3rem 1.5rem; text-align: center; }
+.zastepcza svg.duza { color: var(--drugi-plan); }
+.zastepcza p { max-width: 30ch; }
+.zastepcza .chipy { justify-content: center; margin-top: 0.5rem; }
+/* --- kartka: kolumna 38 rem (około 80 znaków), nad nią data, bez ramek i plakietek --- */
+.tresc { position: relative; min-height: 0; overflow-y: auto; background: var(--plyta); }
+.pusty-panel { display: grid; place-items: center; height: 100%; padding: 2rem; color: var(--drugi-plan); text-align: center; }
+.pusty-panel p { max-width: 36ch; }
+.edytor { padding: 1rem clamp(1.5rem, 5vw, 4rem) 6rem; }
+/* Kolumna minmax(0, 1fr): żadna zawartość nie rozpycha kartki. Przy kolumnie auto pole pozycji listy
+   (sama jego naturalna szerokość) rozpychało kartkę na 351 px przy 328 px miejsca na ekranie 360 px. */
+/* Położenie kartki: 0 przy lewej krawędzi, 0,5 na środku. Domyślnie 0,25, czyli w połowie drogi od środka w lewo
+   (Jacek, 15.10.2026). Zmienia je uchwyt przy tekście i Ustawienia, Wygląd (js/uchwyty.js). */
+.edytor-karta { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.75rem; max-width: 38rem; margin: 0 auto 0 max(0px, calc((100% - 38rem) * var(--polozenie-tekstu, 0.25))); }
+.edytor-karta input, .edytor-karta textarea { background: transparent; }
+/* Nad kartką: data ostatniej zmiany i pod nią przypomnienie (przycisk do jego okienka), równo z tekstem przy lewym
+   brzegu (Jacek, 21.10.2026: „bliżej brzegu … jak kartka papieru”). */
+.e-naglowek { display: grid; justify-items: start; gap: 0.25rem; padding-bottom: 0.5rem; text-align: start; }
+.e-termin { min-height: 1.75rem; padding: 0 0.75rem; gap: 0.375rem; background: var(--przycisk); color: var(--drugi-plan); font-size: var(--maly); line-height: 1.25rem; letter-spacing: var(--sledzenie-maly); }
+.e-termin:hover { background: var(--przycisk-najechanie); color: var(--tekst); }
+.e-termin:disabled { opacity: 1; }
+/* W koszu termin tylko się czyta: to nie przycisk, więc bez kształtu przycisku. */
+.e-termin:disabled::before { background: transparent; box-shadow: none; }
+.e-termin svg.i { width: 14px; height: 14px; }
+/* Tytuł zawija się jak w Notatkach Apple. Pole i jego niewidoczna kopia (data-kopia) stoją w jednej komórce siatki,
+   więc pole ma zawsze wysokość swojego tekstu, przy każdej szerokości okna i każdym powiększeniu. */
+.e-tytul-ramka { display: grid; grid-template-columns: minmax(0, 1fr); }
+.e-tytul-ramka::after { content: attr(data-kopia) " "; visibility: hidden; }
+.e-tytul-ramka > .e-tytul, .e-tytul-ramka::after {
+  grid-area: 1 / 1; min-width: 0; min-height: 0; margin: 0; padding: 0; border: 0;
+  font-size: var(--tytul); font-weight: var(--gruby); line-height: 2.125rem; letter-spacing: var(--sledzenie-tytul);
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.e-tytul-ramka > .e-tytul { display: block; width: 100%; resize: none; overflow: hidden; }
+/* Pole treści to element edytowalny (pogrubienie, kolory, rozmiary), a nie <textarea>. */
+.e-tekst {
+  font: inherit; line-height: 1.625rem;
+  width: 100%; min-height: 50vh; padding: 0;
+  white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word;
+  background: transparent; border: 0; color: inherit;
+}
+.e-tekst:empty::before { content: attr(data-puste); color: var(--drugi-plan); pointer-events: none; }
+.e-tekst code, .wpis-podglad code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 0.95em; }
+.e-tekst u { text-underline-offset: 0.15em; }
+/* Trafienie z szukania (Jacek, 17.10.2026, js/edytor.js, pokazTrafienie): fioletowa kapsułka wokół słowa. Cztery razy
+   wolno pulsuje, potem zostaje spokojna i gaśnie, gdy kursor przejdzie nad nią. Leży nad tekstem, ale go nie przykrywa:
+   w jasnym motywie mnoży kolor (tekst zostaje ciemny), w ciemnym rozjaśnia (tekst zostaje biały). To sygnał, więc pulsuje
+   także przy wyłączonych animacjach systemu. Kontrast liczy narzedzia\kontrast.ps1 z tym samym mieszaniem. */
+.e-trafienie { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.e-trafienie > .trafienie {
+  position: absolute; border-radius: 6px; background: var(--trafienie-spokojne); mix-blend-mode: multiply;
+  animation: trafienie-puls 2s ease-in-out 4; transition: opacity 300ms ease;
+}
+:root[data-motyw="ciemny"] .e-trafienie > .trafienie { mix-blend-mode: screen; }
+.e-trafienie.zgaszone > .trafienie { opacity: 0; }
+@keyframes trafienie-puls {
+  50% { background: var(--trafienie-puls); box-shadow: 0 0 0 2px var(--trafienie-poswiata), 0 0 14px 2px var(--trafienie-poswiata); }
+}
+/* Kolor, wyróżnienie i rozmiar to klasy (js/tekstowe.js, rdzeń format.rs): styl w atrybucie blokuje CSP okna.
+   Rozmiary to stopnie Dynamic Type Apple przy treści 17 px: 15 (Subheadline), 20 (Title 3), 22 i 28 (Title 2 i 1). */
+.k-czerwony { color: var(--k-czerwony); }
+.k-pomaranczowy { color: var(--k-pomaranczowy); }
+.k-zolty { color: var(--k-zolty); }
+.k-zielony { color: var(--k-zielony); }
+.k-mietowy { color: var(--k-mietowy); }
+.k-blekitny { color: var(--k-blekitny); }
+.k-niebieski { color: var(--k-niebieski); }
+.k-fioletowy { color: var(--k-fioletowy); }
+.k-rozowy { color: var(--k-rozowy); }
+.k-brazowy { color: var(--k-brazowy); }
+.k-szary { color: var(--k-szary); }
+.probka { display: inline-block; flex: none; width: 1rem; height: 1rem; border-radius: 50%; background: currentColor; box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.18); }
+:root[data-motyw="ciemny"] .probka { box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18); }
+.probka.brak { background: transparent; box-shadow: inset 0 0 0 1.5px var(--obrys-kontrolki); }
+.t-czerwony { background-color: var(--t-czerwony); }
+.t-pomaranczowy { background-color: var(--t-pomaranczowy); }
+.t-zolty { background-color: var(--t-zolty); }
+.t-zielony { background-color: var(--t-zielony); }
+.t-mietowy { background-color: var(--t-mietowy); }
+.t-blekitny { background-color: var(--t-blekitny); }
+.t-niebieski { background-color: var(--t-niebieski); }
+.t-fioletowy { background-color: var(--t-fioletowy); }
+.t-rozowy { background-color: var(--t-rozowy); }
+.t-brazowy { background-color: var(--t-brazowy); }
+.t-szary { background-color: var(--t-szary); }
+/* Wyróżnienie z zaokrąglonymi brzegami, także gdy łamie się na dwa wiersze. Przy samym kolorze tekstu nic nie widać. */
+.e-tekst span[class] { border-radius: 0.2em; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.r-maly { font-size: 0.8824em; letter-spacing: -0.006em; }
+.r-duzy { font-size: 1.1765em; line-height: 1.75rem; letter-spacing: -0.017em; }
+.r-naglowek { font-size: 1.2941em; line-height: 1.75rem; font-weight: var(--gruby); letter-spacing: -0.019em; }
+.r-tytul { font-size: 1.6471em; line-height: 2.125rem; font-weight: var(--gruby); letter-spacing: -0.021em; }
+/* Tabela jak w Notatkach Apple: cienka siatka bez cieni. Szerokie linie to odstępy w szarym, prawie przezroczystym
+   wypełnieniu (bez nakładania się przezroczystych krawędzi w rogach komórek). */
+.e-tekst table { border-collapse: collapse; margin: 0.375rem 0; }
+.e-tekst td { min-width: 5rem; padding: 0.375rem 0.625rem; border: 1px solid var(--linia-tabeli); vertical-align: top; }
+.e-tekst table.linie-szerokie { border-collapse: separate; border-spacing: 6px; border-radius: var(--promien-karty); background: var(--linia-szeroka); }
+.e-tekst table.linie-szerokie td { border: 0; border-radius: 6px; background: var(--plyta); }
+.e-obrazy { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: 0.5rem; }
+.e-obrazy:empty, .e-linki:empty, .chipy:empty, #e-nagrania:empty { display: none; }
+.e-obraz { position: relative; border-radius: 10px; overflow: hidden; background: var(--przycisk); }
+.e-obraz img { display: block; width: 100%; height: 9rem; object-fit: cover; cursor: zoom-in; }
+.e-obraz .usun, .e-nagranie .usun {
+  position: absolute; top: 0.5rem; right: 0.5rem; width: 2rem; height: 2rem; min-height: 0; padding: 0;
+  border-radius: 50%; background: var(--osd-tlo); color: var(--osd-tekst);
+  box-shadow: 0 0 0 0.5px rgb(255 255 255 / 0.28), 0 1px 3px rgb(0 0 0 / 0.3);
+}
+.e-obraz .ocr-znak { position: absolute; left: 0.5rem; bottom: 0.5rem; background: var(--osd-tlo); color: var(--osd-tekst); }
+.e-lista { display: grid; grid-template-columns: minmax(0, 1fr); }
+.e-pozycja { display: flex; align-items: center; gap: 0.5rem; min-height: 2.5rem; border-radius: var(--promien); }
+.e-pozycja:focus-within { background: var(--najechanie); }
+.e-pozycja input[type="text"] { flex: 1; min-width: 0; padding: 0 0.25rem; }
+.e-pozycja.zrobione input[type="text"] { text-decoration: line-through; color: var(--drugi-plan); }
+.e-znacznik { display: grid; place-items: center; flex: none; width: 2rem; height: 2rem; cursor: pointer; }
+.e-pozycja .uchwyt { width: 1.5rem; height: 1.5rem; min-height: 0; padding: 0; border-radius: 4px; background: transparent; color: var(--drugi-plan); cursor: grab; }
+/* Menu pozycji: cel 32 px, a widać koło 28 px, żeby wiersze listy zostały spokojne (przezroczysta obwódka, tło do niej nie sięga). */
+.e-pozycja .pozycja-menu { width: 2rem; height: 2rem; min-height: 0; padding: 0; border: 2px solid transparent; border-radius: 50%; background: var(--przycisk); background-clip: padding-box; color: var(--drugi-plan); }
+.e-pozycja .pozycja-menu:hover { background: var(--przycisk-najechanie); color: var(--tekst); }
+.e-pozycja.przeciagana { opacity: 0.4; }
+/* Usuwanie pozycji małym X zamiast menu „⋯” (Jacek, 21.10.2026). Kółko 24 px, krzyżyk w drugim planie. */
+.e-pozycja .pozycja-usun { width: 1.5rem; height: 1.5rem; border-width: 0; color: var(--drugi-plan); }
+.e-pozycja .pozycja-usun svg.i { width: 12px; height: 12px; stroke-width: 2; }
+/* Kreska w akcencie nad albo pod wierszem pokazuje, gdzie stanie przeciągana pozycja. */
+.e-pozycja.upusc-nad { box-shadow: inset 0 2px var(--akcent); }
+.e-pozycja.upusc-pod { box-shadow: inset 0 -2px var(--akcent); }
+/* Menu pozycji (⋯) widać zawsze, bo to przycisk (Jacek, 16.10.2026). Uchwyt do przeciągania przy myszy pokazuje się pod
+   kursorem albo przy fokusie w wierszu, jak uchwyty kolumn: kartka zostaje spokojna, a układ się nie przesuwa. */
+@media (hover: hover) {
+  .e-pozycja .uchwyt { opacity: 0; }
+  .e-pozycja:hover .uchwyt, .e-pozycja:focus-within .uchwyt { opacity: 1; }
+}
+.e-zrobione-naglowek, .e-dodaj-pozycje { justify-self: start; justify-content: flex-start; padding: 0 0.875rem; border-radius: 999px; background: var(--przycisk); color: var(--drugi-plan); }
+/* Przerwa między pigułkami pod listą, a nie styk. */
+/* „Dodaj pozycję” to wiersz listy równo z pozycjami (Jacek, 21.10.2026: „blisko tekstu”): plus w kolumnie pól wyboru,
+   napis w kolumnie tekstu. Odstępy z wiersza pozycji: uchwyt 1,5 rem i przerwa 0,5 rem przed polem 2 rem. */
+.e-lista > .e-dodaj-pozycje { justify-self: start; gap: 0.5rem; min-height: 2.25rem; margin-top: 0.25rem; padding: 0 0.875rem 0 0; color: var(--drugi-plan); font-weight: inherit; }
+.e-dodaj-pozycje .e-dodaj-znak { display: grid; place-items: center; flex: none; width: 2rem; height: 2rem; }
+.e-dodaj-pozycje .e-dodaj-znak svg.i { width: 14px; height: 14px; stroke-width: 2.2; }
+.e-dodaj-pozycje > span:last-child { padding-left: 0.25rem; }
+.e-zrobione-naglowek { margin-top: 0.5rem; }
+/* Pigułki z celem 48 px na dotyku (przezroczysta obwódka u góry i u dołu): kształt, włosek i cień rysuje ::before w obrębie
+   wypełnienia, więc obejmują widoczną pigułkę, a nie cały cel. Na komputerze wygląda to tak samo jak zwykły przycisk. */
+.e-termin, .e-zrobione-naglowek, .e-dodaj-pozycje, .e-pozycja .pozycja-menu { position: relative; isolation: isolate; background: transparent; box-shadow: none; }
+:is(.e-termin, .e-zrobione-naglowek, .e-dodaj-pozycje, .e-pozycja .pozycja-menu):is(:hover, :active) { background: transparent; }
+:is(.e-termin, .e-zrobione-naglowek, .e-dodaj-pozycje, .e-pozycja .pozycja-menu)::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  background: var(--przycisk); box-shadow: var(--przycisk-cien); transition: background-color 120ms ease, box-shadow 120ms ease;
+}
+:is(.e-termin, .e-zrobione-naglowek, .e-dodaj-pozycje, .e-pozycja .pozycja-menu):hover:not(:disabled)::before { background: var(--przycisk-najechanie); box-shadow: var(--przycisk-cien-najechanie); }
+:is(.e-termin, .e-zrobione-naglowek, .e-dodaj-pozycje, .e-pozycja .pozycja-menu):active:not(:disabled)::before { background: var(--przycisk-wcisniety); box-shadow: var(--przycisk-cien-wcisniety); }
+.e-nagranie { position: relative; display: grid; gap: 0.5rem; padding: 1rem 3.5rem 1rem 1rem; border-radius: 10px; background: var(--pole); }
+.e-nagranie audio { width: 100%; height: 2.5rem; }
+.e-linki { display: grid; gap: 0.5rem; }
+.e-link { display: flex; align-items: center; gap: 1rem; padding: 0.5rem 1rem; border-radius: 10px; background: var(--pole); color: inherit; text-decoration: none; overflow: hidden; box-shadow: var(--przycisk-cien); transition: translate 120ms ease, box-shadow 120ms ease; }
+.e-link:hover { box-shadow: var(--przycisk-cien-najechanie); translate: 0 -1px; }
+.e-link:active { scale: 0.98; translate: none; }
+.e-link span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.konflikt { display: grid; gap: 0.5rem; justify-items: start; padding: 1rem; border-radius: var(--promien-karty); background: var(--ostrzezenie-tlo); }
+
+/* --- małe plakietki (Porządki AI, nagrywanie) --- */
+.chipy { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chip {
+  display: inline-flex; align-items: center; gap: 0.25rem; max-width: 100%; min-height: 1.5rem; padding: 0 0.625rem;
+  border-radius: 999px; background: var(--przycisk); font-size: var(--maly); line-height: 1.25rem; letter-spacing: var(--sledzenie-maly);
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+/* „AI” w historii wersji: zwykła szara pigułka z pogrubionym napisem. Fiolet znaczy w programie tylko szukanie (wzorzec
+   THIS IS THE WAY, jeden kolor, jedno znaczenie), więc AI go nie dostaje (24.10.2026; do tego dnia fioletowe plakietki). */
+.chip.ai { font-weight: var(--gruby); }
+.chip.ostrzezenie { background: var(--ostrzezenie-tlo); color: var(--tekst); }
+button.chip, label.chip { min-height: 2rem; padding: 0 1rem; gap: 0.5rem; cursor: pointer; }
+/* Wybór zakresu w Porządkach AI to też przyciski: głębia jak przy przycisku. */
+label.chip { box-shadow: var(--przycisk-cien); transition: background-color 120ms ease, box-shadow 120ms ease, translate 120ms ease, scale 80ms ease; }
+label.chip:hover { background: var(--przycisk-najechanie); box-shadow: var(--przycisk-cien-najechanie); translate: 0 -1px; }
+label.chip:active { scale: 0.96; translate: none; }
+label.chip:has(input:checked) { background: var(--wybrany-pasek); font-weight: var(--gruby); }
+
+/* --- menu i okienka (popover) --- */
+/* Menu i okienka stoją nad komunikatami (toast ma 60): otwarte menu jest zawsze na wierzchu, jak w macOS. */
+.popover {
+  position: fixed; z-index: 70; min-width: 14rem; max-width: min(22rem, 92vw); max-height: 70vh; overflow: auto;
+  padding: 0.375rem; border-radius: var(--promien-karty); background: var(--plyta); color: var(--tekst);
+  box-shadow: 0 0 0 1px var(--obwodka-okna), 0 12px 32px var(--cien);
+}
+.naglowek-popovera { padding: 0.375rem 0.625rem 0.5rem; }
+.popover > input[type="text"] { width: 100%; margin-bottom: 0.5rem; }
+.menu-pozycja { display: flex; width: 100%; min-height: 2rem; justify-content: space-between; gap: 1.5rem; padding: 0 0.625rem; border-radius: 6px; background: transparent; text-align: left; font-size: var(--maly); letter-spacing: var(--sledzenie-maly); }
+.menu-pozycja:hover, .menu-pozycja:focus-visible { background: var(--najechanie); }
+.menu-pozycja > span:first-child { display: flex; align-items: center; gap: 0.5rem; }
+.menu-pozycja svg.i { color: var(--drugi-plan); }
+.menu-pozycja.niszczacy, .menu-pozycja.niszczacy svg.i { color: var(--blad); }
+.menu-pozycja svg.zaznaczone { color: var(--tekst); }
+.menu-separator { height: 1px; margin: 0.375rem 0.625rem; background: var(--obwodka); border: 0; }
+.popover .wiersz { min-height: 0; padding: 0.5rem 0 0; border-top: 0; gap: 0.5rem; }
+.powtarzanie { display: grid; }
+.powtarzanie .menu-pozycja { padding-left: 2rem; }
+.wybor { display: inline-flex; align-items: center; gap: 0.25rem; }
+.uwaga-przypomnienia { padding: 0.5rem 0.625rem 0; }
+/* Własna data: pole i „Ustaw” w jednym rzędzie, przycisk na końcu jak w arkuszach Apple.
+   Tekst pola stoi w jednej linii z tekstem pozycji menu nad nim. */
+.popover .wiersz.bez-odstepu { flex-wrap: nowrap; }
+.popover .wiersz input[type="datetime-local"] { flex: 1 1 auto; min-width: 0; padding: 0 0.625rem; }
+.popover .wiersz > button { flex: none; }
+.blad { color: var(--blad); }
+
+/* --- wygląd macOS 27: szkło w warstwie nawigacji, kolory kafelków, kapsułki, uchwyty (15.10.2026) --- */
+
+/* Szkło z rozmyciem (Liquid Glass) w warstwie nawigacji, jak każe Apple: menu, okienka i panel formatowania pływają nad
+   treścią, więc widać pod nimi rozmytą notatkę. Kafelki notatek mają lżejsze szkło, bez rozmycia (wyżej, .wpis).
+   Wariant „regular”: mocne rozmycie i jasna warstwa. Kontrast liczy
+   narzedzia\kontrast.ps1 na najgorszym tle (czerń pod jasnym szkłem, biel pod ciemnym), dlatego drugi plan i czerwień
+   są na szkle o stopień mocniejsze. */
+.popover, .panel-formatu {
+  --drugi-plan: var(--drugi-plan-szkla);
+  --blad: var(--blad-szkla);
+  background: var(--szklo);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: inset 0 1px 0 var(--szklo-blask), 0 0 0 1px var(--szklo-brzeg), 0 12px 32px var(--cien);
+}
+/* Pozycja menu pod kursorem albo z fokusem: niebieska z białym napisem, jak w menu macOS. */
+.menu-pozycja:not(:disabled):hover, .menu-pozycja:focus-visible { background: var(--glowny); color: var(--na-glownym); outline: none; }
+.menu-pozycja:not(:disabled):hover svg.i, .menu-pozycja:focus-visible svg.i,
+.menu-pozycja:not(:disabled):hover kbd, .menu-pozycja:focus-visible kbd { color: var(--na-glownym); }
+
+/* Kolor notatki w menu: kółka jak etykiety w Finderze, pod nimi nazwa koloru (bieżąca, a pod kursorem wskazana). */
+/* Palety: kolor notatki, kolor tekstu i wyróżnienie. Same kółka w kolorach systemowych Apple, bez nazw na widoku (Jacek,
+   15.10.2026: „picture saves 1000 words”). Nazwa jest w dymku i dla czytnika ekranu. Kółko jak ikona Apple: z góry na dół
+   o stopień ciemniej, z jasnym brzegiem u góry. Wybrane ma pierścień w akcencie z odstępem, jak w THIS IS THE WAY. */
+.paleta-wiersz { padding: 0.375rem 0.375rem 0.25rem; }
+.paleta { display: grid; grid-template-columns: repeat(6, 2rem); gap: 0.375rem; }
+.paleta-kolor { display: grid; place-items: center; width: 2rem; height: 2rem; min-height: 0; padding: 0; border-radius: 50%; background: transparent; }
+.paleta-kolor:hover, .paleta-kolor:active { background: transparent; }
+.paleta-kolor .probka {
+  width: 1.5rem; height: 1.5rem;
+  background: linear-gradient(to bottom, var(--kolor-pelny), color-mix(in srgb, var(--kolor-pelny) 80%, #000));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35), inset 0 0 0 1px rgb(0 0 0 / 0.14);
+  transition: transform 120ms ease;
+}
+:root[data-motyw="ciemny"] .paleta-kolor .probka { box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), inset 0 0 0 1px rgb(255 255 255 / 0.16); }
+/* Bez koloru: puste kółko przekreślone po skosie, jak w paletach Apple. */
+.paleta-kolor[data-kolor="DEFAULT"] .probka {
+  background: linear-gradient(to top right, transparent calc(50% - 0.75px), var(--drugi-plan) calc(50% - 0.75px), var(--drugi-plan) calc(50% + 0.75px), transparent calc(50% + 0.75px));
+  box-shadow: inset 0 0 0 1.5px var(--obrys-kontrolki);
+}
+.paleta-kolor:hover .probka { transform: scale(1.1); }
+.paleta-kolor[aria-checked="true"] { box-shadow: 0 0 0 2px var(--akcent); }
+[data-kolor="RED"] { --kafel-tlo: var(--n-czerwony); --kolor-pelny: var(--p-czerwony); }
+[data-kolor="ORANGE"] { --kafel-tlo: var(--n-pomaranczowy); --kolor-pelny: var(--p-pomaranczowy); }
+[data-kolor="YELLOW"] { --kafel-tlo: var(--n-zolty); --kolor-pelny: var(--p-zolty); }
+[data-kolor="GREEN"] { --kafel-tlo: var(--n-zielony); --kolor-pelny: var(--p-zielony); }
+[data-kolor="TEAL"] { --kafel-tlo: var(--n-mietowy); --kolor-pelny: var(--p-mietowy); }
+[data-kolor="BLUE"] { --kafel-tlo: var(--n-blekitny); --kolor-pelny: var(--p-blekitny); }
+[data-kolor="CERULEAN"] { --kafel-tlo: var(--n-niebieski); --kolor-pelny: var(--p-niebieski); }
+[data-kolor="PURPLE"] { --kafel-tlo: var(--n-fioletowy); --kolor-pelny: var(--p-fioletowy); }
+[data-kolor="PINK"] { --kafel-tlo: var(--n-rozowy); --kolor-pelny: var(--p-rozowy); }
+[data-kolor="BROWN"] { --kafel-tlo: var(--n-brazowy); --kolor-pelny: var(--p-brazowy); }
+[data-kolor="GRAY"] { --kafel-tlo: var(--n-szary); --kolor-pelny: var(--p-szary); }
+
+/* Narzędzia nad notatką w kapsułkach ze szkła, jak paski narzędzi w macOS 26 i 27. */
+@media (min-width: 761px) {
+  .naglowek .narzedzia, .naglowek .przyciski-edytora { gap: 0.25rem; padding: 0.125rem; border-radius: 999px; background: var(--kapsula); box-shadow: var(--kapsula-cien); }
+  /* W kapsułce kształt przycisku daje sama kapsułka, jak w paskach narzędzi Apple: symbole bez kół, koło pod kursorem. */
+  .naglowek :is(.narzedzia, .przyciski-edytora) > .ikona { background: transparent; box-shadow: none; translate: none; scale: none; }
+  .naglowek :is(.narzedzia, .przyciski-edytora) > .ikona:active:not(:disabled) { scale: 0.92; }
+  .naglowek :is(.narzedzia, .przyciski-edytora) > .ikona:hover { background: var(--przycisk); }
+  .naglowek :is(.narzedzia, .przyciski-edytora) > .ikona:is(.wlaczony, [aria-expanded="true"]) { background: var(--wybrany-pasek); }
+}
+/* Przycisk paska bocznego stoi na pasku, u góry z prawej: widać, co chowa. Gdy pasek jest schowany albo wysuwany
+   (okno do 1100 px), przycisk stoi na początku nagłówka listy. Napis w dymku mówi „Schowaj” albo „Pokaż” (js/ui.js). */
+/* Rozwinięty pasek to stan zwykły, nie „włączone”: przycisk zostaje szary (niebieski jest tylko dla nowej notatki). */
+#pasek-przelacz[aria-expanded="true"] { background: var(--przycisk); color: var(--drugi-plan); }
+#pasek-przelacz[aria-expanded="true"]:hover { background: var(--przycisk-najechanie); color: var(--tekst); }
+@media (min-width: 1101px) {
+  body:not(.bez-paska) #pasek-przelacz { position: absolute; z-index: 1; top: calc((var(--naglowek-wys) - 2rem) / 2); left: calc(var(--szer-paska) - 2.5rem); }
+}
+
+/* Uchwyty szerokości kolumn i położenia tekstu: niewidoczne, póki kursor nie stanie na krawędzi (Jacek: „super light,
+   niewidoczny”). Przeciąganie zmienia, dwuklik wraca do domyślnej, strzałki działają z klawiatury (js/uchwyty.js). */
+.uchwyt { position: absolute; z-index: 6; top: 0; bottom: 0; width: 0.75rem; margin-left: -0.375rem; cursor: col-resize; touch-action: none; outline: none; }
+.e-polozenie { position: absolute; top: 0; bottom: 0; left: -2rem; width: 1rem; cursor: ew-resize; touch-action: none; outline: none; }
+.uchwyt::after, .e-polozenie::after { content: ""; position: absolute; top: 0; bottom: 0; left: calc(50% - 1px); width: 2px; border-radius: 1px; background: transparent; transition: background 160ms ease; }
+.uchwyt:hover::after, .uchwyt.ciagniety::after, .e-polozenie:hover::after, .e-polozenie.ciagniety::after { background: var(--kreska-uchwytu); }
+.uchwyt:focus-visible::after, .e-polozenie:focus-visible::after { background: var(--akcent); }
+body.ciagniecie-uchwytu, body.ciagniecie-uchwytu * { cursor: col-resize !important; user-select: none !important; }
+#uchwyt-paska { left: var(--szer-paska); }
+#uchwyt-listy { left: calc(var(--szer-paska) + var(--szer-listy)); }
+body.bez-paska #uchwyt-paska { display: none; }
+body.bez-paska #uchwyt-listy { left: var(--szer-listy); }
+@media (max-width: 1100px) {
+  #uchwyt-paska { display: none; }
+  #uchwyt-listy { left: var(--szer-listy); }
+}
+@media (max-width: 760px) {
+  .uchwyt, .e-polozenie { display: none; }
+  body[data-ekran="lista"] .dol, body[data-ekran="lista"] .przyciski-okna { background: var(--tlo-listy); }
+}
+input[type="range"] { width: 10rem; margin: 0; accent-color: var(--glowny); }
+@media (pointer: coarse) {
+  .paleta { grid-template-columns: repeat(6, 3rem); gap: 0.125rem; }
+  .paleta-kolor { width: 3rem; height: 3rem; }
+  .paleta-kolor .probka { width: 1.75rem; height: 1.75rem; }
+}
+/* Ograniczona przezroczystość albo większy kontrast w systemie: szkło robi się nieprzezroczyste, jak u Apple.
+   Kafelki niczego nie prześwitują, więc zmienia je tylko większy kontrast: bez odblasku i lica, z wyraźną krawędzią. */
+@media (prefers-reduced-transparency: reduce) {
+  .popover, .panel-formatu, .toast { -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .popover, .panel-formatu { background: var(--plyta); }
+}
+@media (prefers-contrast: more) {
+  .popover, .panel-formatu { background: var(--plyta); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: 0 0 0 1px var(--tekst), 0 12px 32px var(--cien); }
+  .wpis, .wpis[data-kolor] { --kafel-blask: var(--obrys-kontrolki); --kafel-dol: var(--obrys-kontrolki); --kafel-lico: transparent; --kafel-rant: linear-gradient(transparent, transparent); }
+}
+
+/* --- pasek działań na zaznaczonych notatkach --- */
+.pasek-akcji {
+  display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 0.5rem;
+  padding: 0.5rem; background: var(--plyta); box-shadow: inset 0 1px var(--obwodka);
+}
+/* Dolny pasek: tylko na wąskim ekranie (niżej). */
+.dol { display: none; }
+
+/* --- Porządki AI --- */
+.porzadki { display: grid; gap: 1.5rem; align-content: start; max-width: 45rem; margin: 0 auto; padding: 2rem clamp(1.5rem, 4vw, 3.5rem) 4rem; }
+.ai-polecenie { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.ai-polecenie input { flex: 1 1 14rem; min-width: 0; }
+.ai-stan { display: flex; align-items: center; gap: 1rem; padding: 1rem; }
+.ai-stan > button { margin-left: auto; }
+.propozycja { display: grid; grid-template-columns: auto 1fr; gap: 1rem; padding: 1rem; border-top: 1px solid var(--obwodka); }
+.propozycja:first-child { border-top: 0; }
+.propozycja-tresc { display: grid; gap: 0.5rem; min-width: 0; }
+.roznice {
+  margin: 0; padding: 0.5rem; border-radius: var(--promien); background: var(--podklad);
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: var(--maly); letter-spacing: 0;
+  white-space: pre-wrap; overflow-wrap: anywhere; max-height: 16rem; overflow: auto;
+}
+.roznice .plus { display: block; background: var(--dodane-tlo); }
+.roznice .minus { display: block; background: var(--usuniete-tlo); text-decoration: line-through; }
+.roznice .rowne { display: block; color: var(--drugi-plan); }
+/* Kolor nigdy nie jest jedynym nośnikiem informacji (zasada 7 Jacka): dodana linia ma z przodu „+”, usunięta „−”, a reszta
+   dwie spacje, więc tekst stoi w jednej kolumnie. Znak stoi w swoim polu (inline-block), żeby nie dostał przekreślenia. */
+.roznice :is(.plus, .minus, .rowne)::before { display: inline-block; white-space: pre; content: "  "; color: var(--drugi-plan); }
+.roznice .plus::before { content: "+ "; }
+.roznice .minus::before { content: "− "; }
+
+.spinner { width: 1.125rem; height: 1.125rem; border-radius: 50%; border: 2px solid var(--przycisk-wcisniety); border-top-color: var(--akcent); animation: obrot 0.8s linear infinite; flex: none; }
+@keyframes obrot { to { transform: rotate(360deg); } }
+
+/* --- komunikat na dole: kapsułka jak w Apple --- */
+.toasty { position: fixed; left: 50%; bottom: calc(1.5rem + var(--dol-wys) + var(--akcje-wys, 0px)); transform: translateX(-50%); z-index: 60; display: grid; gap: 0.5rem; justify-items: center; pointer-events: none; }
+.toast {
+  display: flex; align-items: center; gap: 0.75rem; max-width: min(34rem, calc(100vw - 2rem)); min-height: 2.75rem;
+  padding: 0.375rem 0.375rem 0.375rem 1.25rem; border-radius: 999px;
+  background: var(--osd-tlo); color: var(--osd-tekst); pointer-events: auto;
+  -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 8px 24px var(--cien);
+}
+.toast span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.toast button { background: var(--osd-przycisk); color: var(--osd-tekst); font-weight: var(--gruby); box-shadow: var(--osd-przycisk-cien); }
+.toast button:hover { background: var(--osd-najechanie); }
+.toast .zamknij-toast { width: 2rem; padding: 0; }
+
+/* --- dymek (js/dymki.js) --- */
+/* Reguła Jacka z 16.10.2026: dymek zawsze na środku pod rzeczą, której dotyczy (przy dolnej krawędzi na środku nad nią),
+   zaokrąglona karta w stylu Apple z włoskiem i miękkim cieniem, bez ramki systemu. Równe wypełnienie u góry i u dołu,
+   a interlinia nie jest wymuszona: Inter ma równe miejsce nad wielkimi literami i pod nimi, więc tekst stoi na środku
+   w pionie. Dymek nie łapie myszy, więc kliknięcie przez niego trafia w to, co pod nim. */
+.dymek {
+  position: fixed; inset: auto; left: 0; top: 0; z-index: 90; margin: 0;
+  width: max-content; max-width: min(20rem, calc(100vw - 16px)); height: auto; padding: 0.3125rem 0.625rem;
+  border: 0; border-radius: 8px; overflow: visible; pointer-events: none;
+  background: var(--dymek-tlo); color: var(--tekst);
+  box-shadow: 0 0 0 0.5px var(--dymek-brzeg), 0 1px 2px rgb(0 0 0 / 0.06), 0 6px 16px -4px var(--cien);
+  font-size: var(--maly); font-weight: 400; line-height: 1.25rem; letter-spacing: var(--sledzenie-maly);
+  text-align: center; white-space: normal; overflow-wrap: anywhere;
+}
+/* Skrót klawiszowy za tekstem, drugim planem (reguła `ikonki-z-dymkami.md`). */
+.dymek-skrot { margin-left: 0.5rem; color: var(--drugi-plan); white-space: nowrap; }
+
+/* --- arkusze (okna dialogowe) i listy w grupach, jak Ustawienia na Macu --- */
+/* Arkusz stoi na środku okna (przeglądarka centruje <dialog> sama) i nigdy bliżej niż 24 px od brzegu (Jacek, 16.10.2026).
+   Gdy treść się nie mieści, przewija się środek arkusza, a przyciski zostają na dole. */
+dialog {
+  width: min(34rem, calc(100vw - 48px)); max-height: calc(100vh - 48px); padding: 0; border: 0; border-radius: var(--promien-karty);
+  background: var(--podklad); color: var(--tekst); box-shadow: 0 0 0 1px var(--obwodka-okna), 0 24px 48px var(--cien);
+}
+dialog.szeroki { width: min(56rem, calc(100vw - 48px)); }
+dialog::backdrop { background: var(--zaslona); }
+dialog[open] { display: flex; flex-direction: column; }
+.dialog-naglowek { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; min-height: 3rem; padding: 0 0.5rem; box-shadow: inset 0 -1px var(--obwodka); }
+.dialog-naglowek h2 { grid-column: 2; text-align: center; }
+.dialog-naglowek .start { grid-column: 1; justify-self: start; display: flex; gap: 0.5rem; }
+.dialog-naglowek .koniec { grid-column: 3; justify-self: end; display: flex; gap: 0.5rem; }
+.dialog-tresc { display: grid; gap: 1.5rem; padding: 1.5rem; overflow-y: auto; }
+.dialog-przyciski { display: flex; justify-content: flex-end; gap: 0.5rem; padding: 0.5rem 1.5rem 1.5rem; }
+/* Róg arkusza (js/arkusze.js): dwie ukośne kreski jak w macOS. Ciągnięcie zmienia rozmiar arkusza, a dwuklik wraca do 100%.
+   Kółko myszy nad arkuszem przewija tylko jego środek, nigdy okna pod spodem. */
+.rog-arkusza {
+  position: absolute; right: 2px; bottom: 2px; z-index: 3; display: grid; place-items: center; width: 24px; height: 24px;
+  border-radius: 50%; color: var(--drugi-plan); cursor: nwse-resize; touch-action: none;
+}
+.rog-arkusza svg.i { width: 14px; height: 14px; stroke-width: 1.4; }
+dialog.podglad-obrazu .rog-arkusza { background: var(--osd-tlo); color: var(--osd-tekst); }
+@media not (any-pointer: fine) { .rog-arkusza { display: none; } }
+body.arkusz-ruch, body.arkusz-ruch * { cursor: grabbing !important; user-select: none !important; }
+body.rog-arkusza-ruch, body.rog-arkusza-ruch * { cursor: nwse-resize !important; user-select: none !important; }
+dialog, .dialog-tresc, .sciaga-tresc, .historia-lista { overscroll-behavior: contain; }
+.grupa { display: grid; gap: 0.5rem; }
+.grupa > h3, .grupa > .opis-grupy { padding: 0 1rem; }
+.lista { border-radius: 10px; background: var(--grupa); box-shadow: 0 0 0 1px var(--obwodka); overflow: hidden; }
+.wiersz { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 3rem; padding: 0.5rem 1rem; border-top: 1px solid var(--obwodka); }
+.wiersz:first-child { border-top: 0; }
+label.wiersz { cursor: pointer; }
+/* Opis zajmuje resztę wiersza, a przełącznik czy lista wyboru stoją z prawej; pod opis schodzą
+   dopiero wtedy, gdy opisowi zostałoby mniej niż 10 rem (wąski telefon, szerokie pole). */
+.wiersz-tekst { display: grid; flex: 1 1 10rem; min-width: 0; }
+.wiersz-tekst > * { overflow-wrap: anywhere; }
+.wiersz-tekst .caption.jedna-linia { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wiersz input[type="number"] { width: 6.5rem; text-align: right; }
+.wiersz input[type="password"], .wiersz input[type="text"], .wiersz input[type="url"] { width: min(18rem, 60%); }
+.wiersz select { max-width: 60%; }
+/* Przycisk w liście: tekst w kolorze linku (5,6:1). */
+.wiersz.przycisk-wiersz { justify-content: center; width: 100%; border-radius: 0; background: transparent; color: var(--link); font-weight: var(--gruby); cursor: pointer; }
+.wiersz.przycisk-wiersz:hover { background: var(--najechanie); }
+.wiersz.przycisk-wiersz.niszczacy { color: var(--blad); }
+.wiersz .przyciski { display: flex; flex: none; align-items: center; gap: 0.5rem; }
+/* Wielkość okna: stała szerokość liczby, żeby przyciski nie skakały przy 90% i 100%. */
+.wielkosc-poziom { min-width: 3.5rem; text-align: center; }
+
+/* Ustawienia: działy po lewej, widać jeden naraz – każdy mieści się bez przewijania. */
+dialog.ustawienia { width: min(52rem, calc(100vw - 48px)); height: min(40rem, calc(100vh - 48px)); }
+.ustawienia-cialo { display: grid; grid-template-columns: 12rem minmax(0, 1fr); flex: 1; min-height: 0; }
+.u-dzialy { display: grid; align-content: start; gap: 0.5rem; padding: 0.5rem; box-shadow: inset -1px 0 var(--obwodka); overflow-y: auto; }
+.u-dzialy button { justify-content: flex-start; min-height: 2rem; padding: 0 0.75rem; border-radius: var(--promien-wiersza); background: var(--przycisk); text-align: left; font-size: var(--maly); letter-spacing: var(--sledzenie-maly); }
+.u-dzialy button:hover { background: var(--przycisk-najechanie); }
+.u-dzialy button[aria-current="page"] { background: var(--wybrany-pasek); font-weight: var(--gruby); }
+.u-dzialy button svg.i { display: none; margin-left: auto; color: var(--drugi-plan); }
+.ustawienia .dialog-tresc { align-content: start; }
+.o-programie { justify-items: center; text-align: center; gap: 0.5rem; }
+.o-programie > button { margin-top: 1rem; }
+
+/* Skróty klawiszowe: cztery kolumny, całość bez przewijania na laptopie. */
+dialog.skroty { width: min(64rem, calc(100vw - 48px)); }
+#skroty-tresc { grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); align-items: start; gap: 1.5rem 1rem; }
+.skroty .grupa > h3 { padding: 0 0.75rem; }
+.skroty .wiersz { min-height: 2rem; padding: 0.25rem 0.75rem; gap: 0.5rem; font-size: var(--maly); letter-spacing: var(--sledzenie-maly); }
+.skroty kbd { flex: none; white-space: nowrap; }
+
+/* Ściąga „i” (reguła Jacka z 15.10.2026): bez tytułu i wstępu. Ikonka jak w programie na kafelku z włoskiem i miękkim
+   cieniem, jak kapsułki narzędzi, a obok kilka słów. Na laptopie całość mieści się bez przewijania: przyciski w czterech
+   kolumnach, skróty w trzech. */
+/* 52 rem: skróty w trzech kolumnach mieszczą dwa klawisze i napis w jednej linii (Ctrl+Z, Ctrl+Y). */
+dialog.sciaga { width: min(52rem, calc(100vw - 48px)); }
+/* Ściąga stoi obok pracy, bez zasłony (Jacek, 17.10.2026: „detached window”): na środku okna jak arkusz, nad treścią,
+   pod menu, komunikatami i dymkami. X w prawym górnym rogu stoi obok nagłówka pierwszej części, więc nie zabiera wiersza. */
+dialog.sciaga { position: fixed; inset: 0; z-index: 50; overflow: auto; }
+dialog.sciaga .sciaga-zamknij { position: absolute; top: 0.5rem; right: 0.5rem; z-index: 2; }
+.sciaga-tresc { display: grid; gap: 1.5rem; padding: 1.5rem 1.5rem 0.5rem; overflow-y: auto; }
+.sciaga-czesc { display: grid; gap: 0.75rem; }
+.sciaga-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: 0.75rem 1rem; }
+.sciaga-lista.klawisze { grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); }
+.sciaga-pozycja { display: flex; align-items: center; gap: 0.75rem; min-width: 0; font-size: var(--maly); line-height: 1.25rem; letter-spacing: var(--sledzenie-maly); }
+.sciaga-pozycja.szeroka { grid-column: 1 / -1; }
+.sciaga-pozycja > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+.sciaga-znak {
+  flex: none; display: inline-grid; place-items: center; min-width: 1.75rem; height: 1.75rem; padding: 0 0.375rem;
+  border-radius: 7px; background: var(--kapsula); box-shadow: var(--kapsula-cien); color: var(--tekst); white-space: nowrap;
+}
+kbd.sciaga-znak { color: var(--tekst); }
+.sciaga-klawisze { display: inline-flex; flex: none; gap: 0.25rem; }
+/* Ikonka i litery na kafelku tej samej szerokości, żeby napisy stały w jednej linii. */
+span.sciaga-znak { width: 1.75rem; padding: 0; }
+.sciaga-znak svg.i { width: 16px; height: 16px; }
+.sciaga-znak .fmt-litery { font-size: var(--maly); }
+@media (max-width: 760px) {
+  /* Wąskie okno: mniejsze marginesy w środku arkusza, tekst bez zmian (Jacek, 16.10.2026). */
+  .dialog-tresc { padding: 1rem; }
+  .sciaga-tresc { padding: 1rem 1rem 0.5rem; }
+  .dialog-przyciski { padding: 0.5rem 1rem 1rem; }
+  .sciaga-lista { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Skrót i napis potrzebują całego wiersza: w dwóch kolumnach napis łamałby się po jednym słowie. */
+  .sciaga-lista.klawisze { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* --- historia wersji --- */
+.historia { display: grid; grid-template-columns: minmax(14rem, 18rem) 1fr; gap: 1.5rem; min-height: 24rem; }
+.historia-lista { overflow-y: auto; max-height: 60vh; }
+.historia-lista button { width: 100%; display: grid; justify-items: start; gap: 0; padding: 0.5rem 1rem; text-align: left; background: transparent; border-radius: 0; border-top: 1px solid var(--obwodka); }
+.historia-lista button:first-child { border-top: 0; }
+.historia-lista button[aria-selected="true"] { background: var(--wybrany); }
+.historia-podglad { display: grid; align-content: start; gap: 1rem; min-width: 0; }
+@media (max-width: 700px) { .historia { grid-template-columns: 1fr; } }
+
+/* --- podgląd obrazu --- */
+dialog.podglad-obrazu { position: relative; width: auto; max-width: calc(100vw - 48px); background: var(--osd-tlo); color: var(--osd-tekst); }
+.podglad-zamknij {
+  position: absolute; top: 0.5rem; right: 0.5rem; z-index: 2; width: 2.5rem; height: 2.5rem; min-height: 0; padding: 0;
+  border-radius: 50%; background: var(--osd-tlo); color: var(--osd-tekst);
+  box-shadow: 0 0 0 0.5px rgb(255 255 255 / 0.28), 0 1px 3px rgb(0 0 0 / 0.3);
+}
+.podglad-zamknij:hover { background: var(--osd-najechanie); }
+/* Obraz mieści się w arkuszu 24 px od brzegów okna, także z tekstem rozpoznanym pod spodem. */
+dialog.podglad-obrazu img { display: block; max-width: calc(100vw - 48px); max-height: calc(100vh - 48px); object-fit: contain; }
+dialog.podglad-obrazu:has(.ocr:not(:empty)) img { max-height: calc(80vh - 48px); }
+dialog.podglad-obrazu .ocr { max-width: calc(100vw - 48px); max-height: 20vh; overflow: auto; padding: 1rem; white-space: pre-wrap; }
+dialog.podglad-obrazu .ocr:empty { display: none; }
+
+/* --- blokada (Android): zasłania treść do odblokowania --- */
+.blokada {
+  position: fixed; inset: 0; z-index: 1000;
+  display: grid; justify-items: center; align-content: center; gap: 1rem;
+  padding: 2rem; text-align: center; background: var(--plyta); color: var(--tekst);
+  touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.blokada svg.duza { color: var(--drugi-plan); }
+
+/* --- dotyk: cele co najmniej 48 px (Material), 44 pt (Apple) --- */
+@media (pointer: coarse) {
+  .menu-pozycja, .nawigacja button, .u-dzialy button { min-height: 3rem; }
+  /* Na telefonie jak w Notatkach iCloud na jednym panelu: foldery, menu i szukanie w 17 px. */
+  .menu-pozycja, .nawigacja button, .u-dzialy button, .szukajka input { font-size: var(--tresc); letter-spacing: var(--sledzenie-tresc); }
+  /* Każdy przycisk i każde pole ma pod palcem 48 px. Selektory bez klas, więc wiersze listy (64 px)
+     i inne elementy z własną wysokością zostają przy swojej. Szukajka ma 40 px, jak pole szukania Apple. */
+  button, select, input[type="text"], input[type="password"], input[type="number"], input[type="datetime-local"], input[type="url"] { min-height: 3rem; }
+  .pigulka, button.chip, .e-pozycja { min-height: 3rem; }
+  /* Przytrzymanie palcem pokazuje dymek (js/dymki.js), a nie zaznacza napisu na przycisku. */
+  button { -webkit-user-select: none; user-select: none; }
+  .ikona, .toast .zamknij-toast, .e-pozycja .pozycja-menu, .e-znacznik, .e-obraz .usun, .e-nagranie .usun { width: 3rem; height: 3rem; }
+  /* X ściągi ma pod palcem 48 px: pierwsza lista schodzi pod niego. */
+  .sciaga-tresc { padding-top: 2rem; }
+  .e-link { min-height: 3rem; }
+  /* Pozycje listy przeciąga się myszą. Palcem kolejność zmienia menu ⋯ przy pozycji (Przenieś wyżej, niżej). */
+  .e-pozycja .uchwyt { display: none; }
+  .toast { padding-block: 0; }
+  /* Termin nad kartką: 48 px pod palcem, a układ bez zmian, bo ujemny margines oddaje dodatkowe piksele. */
+  .e-termin { min-height: 3rem; margin-block: -0.625rem; }
+  /* Cel 48 px, ale widoczna pigułka nie rośnie razem z nim (reguła Jacka z 16.10.2026): przezroczysta obwódka u góry
+     i u dołu, a tło tylko w środku. */
+  .e-termin { border-block: 0.625rem solid transparent; background-clip: padding-box; }
+  .e-zrobione-naglowek, .e-dodaj-pozycje { border-block: 0.5rem solid transparent; background-clip: padding-box; }
+  .e-pozycja .pozycja-menu { border-width: 10px; }
+}
+
+/* --- okno do 1100 px: pasek boczny wysuwa się nad listę --- */
+@media (max-width: 1100px) {
+  .naglowek { grid-template-columns: var(--szer-listy) minmax(0, 1fr) auto; }
+  .uklad { grid-template-columns: var(--szer-listy) minmax(0, 1fr); }
+  .n-pasek { display: none; }
+  .pasek-boczny { position: fixed; top: var(--naglowek-wys); bottom: 0; left: 0; z-index: 30; width: min(15rem, 85vw); padding-top: 0.5rem; box-shadow: 0 0 0 1px var(--obwodka-okna), 0 12px 32px var(--cien); }
+  body:not(.pasek-otwarty) .pasek-boczny { display: none; }
+}
+/* Pasek boczny schowany na życzenie (przycisk albo F9). */
+body.bez-paska .naglowek { grid-template-columns: var(--szer-listy) minmax(0, 1fr) auto; }
+body.bez-paska .uklad { grid-template-columns: var(--szer-listy) minmax(0, 1fr); }
+body.bez-paska .n-pasek { display: none; }
+@media (min-width: 1101px) { body.bez-paska .pasek-boczny { display: none; } }
+
+/* --- wąski ekran (telefon, wąskie okno): lista albo kartka, częste przyciski na dole --- */
+@media (max-width: 760px) {
+  :root { --naglowek-wys: 3.25rem; --dol-wys: 3.5rem; }
+  .naglowek, body.bez-paska .naglowek { grid-template-columns: minmax(0, 1fr) auto; }
+  .uklad, body.bez-paska .uklad { grid-template-columns: minmax(0, 1fr); }
+  .n-lista, .n-tresc { padding: 0 0.25rem; gap: 0; box-shadow: inset 0 -1px var(--kreska-kolumny); }
+  .n-lista .szukajka { margin: 0 0.5rem 0 0.25rem; }
+  .szukajka input { min-height: 3rem; }
+  body:not([data-ekran="lista"]) .n-lista, body[data-ekran="lista"] .n-tresc { display: none; }
+  body:not([data-ekran="lista"]) .kolumna-listy, body[data-ekran="lista"] .tresc { display: none; }
+  #wstecz { display: inline-flex; }
+  #nowa { display: none; }
+  .naglowek .ikona, .dol .ikona { width: 3rem; height: 3rem; }
+  .naglowek .ikona svg.i, .dol .ikona svg.i { width: 24px; height: 24px; stroke-width: 1.3; }
+  .pasek-boczny { top: var(--naglowek-wys); }
+  .kolumna-listy { box-shadow: none; }
+  .edytor { padding: 0.5rem 1rem 2rem; }
+  .e-tekst { min-height: 30vh; }
+  .porzadki { padding: 1.5rem 1rem 2rem; }
+  .dol {
+    display: flex; align-items: center; min-height: 3.5rem; padding: 0 0.5rem env(safe-area-inset-bottom);
+    background: var(--plyta); box-shadow: inset 0 1px var(--obwodka);
+  }
+  body:not([data-ekran="lista"]) .dol-lista { display: none; }
+  .dol-lista { display: flex; flex: 1; align-items: center; }
+  .dol-lista .info { flex: none; }
+  .dol-lista #licznik-listy { flex: 1; text-align: center; }
+  .dol .narzedzia { flex: 1; justify-content: space-around; gap: 0; }
+  .dol .panel-formatu { position: fixed; top: auto; left: 0; right: 0; bottom: var(--dol-wys); border-radius: 0; box-shadow: inset 0 1px var(--obwodka); }
+  .dol .pasek-formatu { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.5rem; padding: 0.5rem; }
+  .dol .pasek-formatu .ikona { width: 100%; height: 3rem; }
+  /* Ustawienia na całym ekranie: najpierw lista działów, stuknięcie otwiera dział. */
+  dialog.ustawienia { width: 100vw; height: 100vh; height: 100dvh; max-width: none; max-height: none; border-radius: 0; }
+  .ustawienia-cialo { grid-template-columns: minmax(0, 1fr); }
+  .ustawienia.dzial-otwarty .u-dzialy, .ustawienia:not(.dzial-otwarty) .dialog-tresc { display: none; }
+  .u-dzialy { padding: 0.5rem; box-shadow: none; }
+  .u-dzialy button { min-height: 3.5rem; }
+  .u-dzialy button[aria-current="page"] { background: var(--przycisk); font-weight: 400; }
+  .u-dzialy button svg.i { display: block; }
+  .ustawienia .dialog-tresc { padding: 1rem; }
+  .wiersz { flex-wrap: wrap; }
+}
+/* Powietrze na wąskim ekranie (reguła oddech-wszedzie: przycisk nie dotyka krawędzi paska ani sąsiada). Do 24.10.2026
+   koła 48 px stały w pasku 52 px: 2 px od góry i od kreski, 4 px od brzegu okna i od siebie. Teraz koła stoją co 12 px
+   i 8 px od brzegu okna, na telefonie koła 48 px (cel palca) w pasku 64 px, jak górny pasek Material 3, a w wąskim oknie
+   na komputerze koła 36 px, jak w szerokim oknie, w pasku 52 px. */
+@media (max-width: 760px) {
+  .n-lista, .n-tresc, .n-tresc > .przyciski-edytora { gap: 0.75rem; }
+  .n-lista, .n-tresc { padding: 0 0.5rem; }
+  .n-lista .szukajka { margin: 0; }
+}
+@media (max-width: 760px) and (pointer: coarse) {
+  :root { --naglowek-wys: 4rem; --dol-wys: calc(4rem + env(safe-area-inset-bottom)); }
+  .dol { min-height: var(--dol-wys); padding: 0.5rem 0.5rem calc(0.5rem + env(safe-area-inset-bottom)); }
+  .dol-lista .info { width: 3rem; height: 3rem; }
+}
+@media (max-width: 760px) and (pointer: fine) {
+  .naglowek .ikona, .dol .ikona { width: 2.25rem; height: 2.25rem; }
+  .naglowek .ikona svg.i, .dol .ikona svg.i { width: 18px; height: 18px; stroke-width: 1.5; }
+  .szukajka input { min-height: 2.25rem; }
+}
+
+/* Tryb wysokiego kontrastu Windows: kolory systemowe, granice zamiast cieni. */
+@media (forced-colors: active) {
+  .lista, .popover, dialog, .toast, .panel-formatu, .sciaga-znak, .dymek { border: 1px solid CanvasText; }
+  .wpis[aria-current="true"], .wpis.zaznaczona { border: 2px solid Highlight; }
+  .sugerowany { forced-color-adjust: none; background: Highlight; color: HighlightText; }
+  input[role="switch"], input[type="checkbox"] { border: 1px solid ButtonText; }
+  .nawigacja button:is([aria-current="page"], [aria-pressed="true"]), .u-dzialy button[aria-current="page"] { border: 2px solid Highlight; }
+  .e-trafienie > .trafienie { forced-color-adjust: none; mix-blend-mode: normal; background: transparent; box-shadow: none; outline: 2px solid Highlight; animation: none; }
+}
+/* Wyłączone animacje systemu: znika ruch ozdobny (przełącznik, przejścia). Kółko „pracuje” i puls trafienia z szukania
+   to sygnały, więc zostają – inaczej nie widać, czy Porządki AI pracują ani gdzie jest trafienie (reguła Jacka). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before { transition: none !important; }
+  /* Wybrany zakres Porządków AI w :where(), żeby reguła nie dostała jego wagi (0,3,2) i nie przykryła pierścienia nowego
+     obrazu (.e-obraz.nowy, 0,2,0), który znika dopiero po końcu swojej animacji (24.10.2026, test kosza). */
+  *:not(.spinner, .trafienie, .nawigacja [aria-current="page"], .nawigacja [aria-pressed="true"], :where(.wybor label.chip:has(input:checked))), *::before { animation: none !important; }
+}
+
+/* --- Sam tekst (Jacek, 21.10.2026: „full screen, żeby oba taby … zsunąć do ściany. Pozostaje sam tekst”). F11, przycisk
+   z rogami nad notatką, a z powrotem F11, ten sam przycisk albo Escape (js/app.js, przelaczSamTekst). Kolumny paska
+   i listy maleją do zera, więc panele zjeżdżają do lewej ściany i tą samą drogą wracają. Schowane nie łapią fokusu. --- */
+#sam-tekst { display: none; }
+@media (min-width: 761px) {
+  body[data-ekran="edytor"] #sam-tekst { display: inline-flex; }
+  .naglowek, .uklad { transition: grid-template-columns 0.3s cubic-bezier(0.2, 0, 0, 1); }
+  body.sam-tekst { --szer-paska: 0px; --szer-listy: 0px; }
+  body.sam-tekst :is(.n-pasek, .n-lista, #pasek, #kolumna-listy) { visibility: hidden; overflow: hidden; padding-inline: 0; box-shadow: none; transition: visibility 0s linear 0.3s; }
+  body.sam-tekst :is(#uchwyt-paska, #uchwyt-listy, #pasek-przelacz) { display: none; }
+  body.sam-tekst #sam-tekst { background: var(--przycisk); }
+}
+@media (prefers-reduced-motion: reduce) { .naglowek, .uklad { transition: none; } }
+
+/* „Dodaj pozycję” to pigułka na miarę napisu, nie belka przez całą kartkę (zrzut z 21.10.2026): plus stoi w kolumnie
+   pól wyboru, napis w kolumnie tekstu, a kształt przycisku jest w spoczynku (reguła przyciski-zawsze-jak-przyciski). */
+/* Krzyżyk usuwania stoi przy wierszu pod kursorem i przy fokusie, jak uchwyt; na dotyku jest zawsze. */
+@media (hover: hover) and (pointer: fine) {
+  .e-pozycja .pozycja-usun { opacity: 0; }
+  .e-pozycja:is(:hover, :focus-within) .pozycja-usun { opacity: 1; }
+}
+/* --- Wygląd z Porównywarek AI (Jacek, 21.10.2026: „wygląda jak z XIX wieku”; wzór: „Wzorzec wyglądu porównywarek AI.md”
+   w Materiały dla AI, reguła przyciski-zawsze-jak-przyciski). Widoki to osobne pigułki 40 px z kafelkiem ikony w barwie
+   widoku, wybrany jest biały, z pierścieniem w akcencie i jednym przebłyskiem przy wyborze (stały połysk rozpraszałby
+   przy czytaniu notatki). Narzędzia nad notatką to osobne okrągłe przyciski z głębią, a nie jedna szara kapsuła. --- */
+:root, :root[data-motyw="jasny"] {
+  --pole-widoku: #e8e8ed;
+  --nacisk: 16%;
+  --nacisk-kursor: 24%;
+  --polysk: 40%;
+  --cien-widoku: 30%;
+  --wybrany-widok: #ffffff;
+  --przycisk-okragly: #ffffff;
+  --znak-przycisku: #48484a;
+  --b-niebieski: #0071e3; --b-indygo: #5856d6; --b-turkus: #30b0c7; --b-braz: #a2845e; --b-szary: #8e8e93; --b-cyjan: #32ade6; --b-mieta: #00c7be;
+}
+:root[data-motyw="ciemny"] {
+  --pole-widoku: #2c2c2e;
+  --nacisk: 24%;
+  --nacisk-kursor: 32%;
+  --polysk: 32%;
+  --cien-widoku: 0%;
+  --wybrany-widok: #3a3a3c;
+  --przycisk-okragly: #2c2c2e;
+  --znak-przycisku: #d1d1d6;
+  --b-niebieski: #409cff; --b-indygo: #7d7aff; --b-turkus: #40c8e0; --b-braz: #ac8e68; --b-szary: #98989d; --b-cyjan: #64d2ff; --b-mieta: #63e6e2;
+}
+[data-barwa="niebieski"] { --h: var(--b-niebieski); --g1: #0a84ff; --g2: #0060df; }
+[data-barwa="indygo"] { --h: var(--b-indygo); --g1: #7d7aff; --g2: #3634a3; }
+[data-barwa="turkus"] { --h: var(--b-turkus); --g1: #40c8e0; --g2: #0071a4; }
+[data-barwa="braz"] { --h: var(--b-braz); --g1: #c69c6d; --g2: #7f6545; }
+[data-barwa="szary"] { --h: var(--b-szary); --g1: #98989d; --g2: #48484a; }
+[data-barwa="cyjan"] { --h: var(--b-cyjan); --g1: #3aa9e8; --g2: #0a6fa6; }
+[data-barwa="mieta"] { --h: var(--b-mieta); --g1: #26b5aa; --g2: #0a7c76; }
+
+/* Pasek boczny: pigułki co 12 px, 12 px od brzegów paska. */
+.pasek-boczny { padding: 0.25rem 0.75rem 0.75rem; }
+.nawigacja { gap: 0.75rem; }
+.nawigacja button[data-barwa] {
+  min-height: 2.5rem; gap: 0.5rem; padding: 0 1rem; border-radius: 1.25rem;
+  background: color-mix(in srgb, var(--h) var(--nacisk), var(--pole-widoku));
+  font-size: var(--maly); font-weight: 500; letter-spacing: var(--sledzenie-maly); color: var(--tekst);
+  box-shadow: var(--przycisk-cien);
+}
+.nawigacja button[data-barwa]:hover:not(:disabled) { background: color-mix(in srgb, var(--h) var(--nacisk-kursor), var(--pole-widoku)); box-shadow: var(--przycisk-cien-najechanie); }
+.nawigacja button[data-barwa]:active:not(:disabled) { scale: 0.97; box-shadow: var(--przycisk-cien-wcisniety); }
+
+.nawigacja button[data-barwa] .licznik { color: var(--drugi-plan-kafla); }
+/* Kafelek ikony: kwadrat 24 px, rogi 7 px, gradient z góry na dół, biały znak (wzorzec THIS IS THE WAY, „Ikony”). */
+.kafel-ikony {
+  flex: none; display: grid; place-items: center; width: 1.5rem; height: 1.5rem; border-radius: 7px;
+  background: linear-gradient(180deg, var(--g1), var(--g2));
+  box-shadow: inset 0 0.5px 0 rgb(255 255 255 / 0.35), 0 1px 2px rgb(0 0 0 / 0.2);
+}
+.nawigacja button[data-barwa] .kafel-ikony svg.i { width: 14px; height: 14px; stroke-width: 1.7; color: #ffffff; }
+.nawigacja button[data-barwa]:active:not(:disabled) .kafel-ikony { scale: 0.92; }
+/* Wybrany widok: biała pigułka, pierścień w akcencie z odstępem, cień w barwie widoku i jeden przebłysk w tej barwie. */
+.nawigacja button[data-barwa]:is([aria-current="page"], [aria-pressed="true"]) {
+  background-color: var(--wybrany-widok);
+  background-image: linear-gradient(105deg, transparent 38%, color-mix(in srgb, var(--h) var(--polysk), transparent) 50%, transparent 62%);
+  background-size: 260% 100%; background-repeat: no-repeat; background-position: 0 0;
+  font-weight: var(--gruby);
+  box-shadow: var(--przycisk-cien), 0 0 0 2px var(--pasek-tlo), 0 0 0 4px var(--akcent), 0 4px 12px color-mix(in srgb, var(--h) var(--cien-widoku), transparent);
+  animation: polysk-widoku 1.2s ease-in-out 1;
+}
+.nawigacja button[data-barwa]:is([aria-current="page"], [aria-pressed="true"]) svg.i { color: #ffffff; }
+.nawigacja button[data-barwa]:is([aria-current="page"], [aria-pressed="true"]) .licznik { color: var(--tekst); }
+@keyframes polysk-widoku { from { background-position: 100% 0; } to { background-position: 0 0; } }
+/* Stopka paska: Porządki AI na całą szerokość, pod nią Ustawienia, a obok nich ściąga „i” w kółku 40 px. */
+.stopka-paska { position: relative; display: block; padding-top: 0.75rem; box-shadow: none; }
+.stopka-paska .dol-paska { display: grid; grid-template-columns: minmax(0, 1fr) 2.5rem; gap: 0.75rem; }
+.stopka-paska .dol-paska > li:first-child { grid-column: 1 / -1; }
+.stopka-paska > .info { position: absolute; right: 0; bottom: 0; }
+.stopka-paska > .info, .dol-lista .info { width: 2.5rem; height: 2.5rem; }
+.stopka-paska > .info svg.i, .dol-lista .info svg.i { width: 18px; height: 18px; stroke-width: 1.6; }
+
+/* Okrągłe przyciski z głębią w nagłówku i w rogu paska: biała tarcza (w ciemnym #2c2c2e), włosek, jasna krawędź u góry,
+   cień, pod kursorem 1 px w górę. Przyciski w okienkach i komunikatach zostają przy swoich szarych kołach. */
+:is(.naglowek, .stopka-paska, .dol) :where(button).ikona { background: var(--przycisk-okragly); color: var(--znak-przycisku); }
+:is(.naglowek, .stopka-paska, .dol) :where(button).ikona:hover { background: var(--przycisk-okragly); color: var(--tekst); }
+:is(.naglowek, .stopka-paska, .dol) :where(button).ikona:active { background: var(--przycisk-okragly); }
+:is(.naglowek, .stopka-paska, .dol) .ikona:is(.wlaczony, [aria-expanded="true"]) { background: color-mix(in srgb, var(--akcent) 14%, var(--przycisk-okragly)); color: var(--akcent); }
+@media (min-width: 761px) {
+  :root { --naglowek-wys: 3.5rem; }
+  .n-pasek, .n-lista, .n-tresc { gap: 0.75rem; }
+  .n-lista { padding: 0 0.75rem; }
+  .n-tresc { padding: 0 0.75rem 0 1rem; }
+  .naglowek button.ikona { width: 2.25rem; height: 2.25rem; }
+  .naglowek button.ikona svg.i { width: 18px; height: 18px; stroke-width: 1.5; }
+  /* Osobne przyciski zamiast jednej kapsuły (Jacek, 21.10.2026: „rozdzielone na klawisze … osobnymi itemami”). */
+  .naglowek .narzedzia, .naglowek .przyciski-edytora { gap: 0.75rem; padding: 0; border-radius: 0; background: none; box-shadow: none; }
+  .naglowek :is(.narzedzia, .przyciski-edytora) > .ikona { background: var(--przycisk-okragly); box-shadow: var(--przycisk-cien); translate: none; scale: none; }
+  .naglowek :is(.narzedzia, .przyciski-edytora) > .ikona:hover:not(:disabled) { background: var(--przycisk-okragly); box-shadow: var(--przycisk-cien-najechanie); translate: 0 -1px; }
+  .naglowek :is(.narzedzia, .przyciski-edytora) > .ikona:active:not(:disabled) { box-shadow: var(--przycisk-cien-wcisniety); translate: none; scale: 0.96; }
+  .naglowek :is(.narzedzia, .przyciski-edytora) > .ikona:is(.wlaczony, [aria-expanded="true"]) { background: color-mix(in srgb, var(--akcent) 14%, var(--przycisk-okragly)); color: var(--akcent); }
+  /* Rozwinięty pasek to stan zwykły: tarcza jak inne przyciski. */
+  #pasek-przelacz[aria-expanded="true"], #pasek-przelacz[aria-expanded="true"]:hover { background: var(--przycisk-okragly); }
+  /* Między narzędziami tekstu a Sam tekst grupa dalej niż przyciski w grupie (24 px wobec 12 px). */
+  #narzedzia-tekstu { margin-left: 0.75rem; }
+  .nowa-notatka { min-height: 2.25rem; padding: 0 1rem; gap: 0.5rem; font-size: var(--maly); letter-spacing: var(--sledzenie-maly); }
+  .nowa-notatka svg.i { width: 14px; height: 14px; stroke-width: 2.2; }
+  .szukajka input { min-height: 2rem; }
+  .szukajka .wyczysc { height: 2rem; }
+}
+@media (min-width: 1101px) {
+  body:not(.bez-paska) #pasek-przelacz { top: calc((var(--naglowek-wys) - 2.25rem) / 2); left: calc(var(--szer-paska) - 3rem); }
+}
+@media (pointer: coarse) {
+  .nawigacja button[data-barwa] { min-height: 3rem; border-radius: 1.5rem; }
+}
+/* --- Ustawienia jak Ustawienia systemowe Apple (zadanie 28): działy to te same pigułki z kafelkiem ikony co pasek
+   boczny, na tle paska; grupy to białe karty z miękkim cieniem, rogi 14 px, a kreska między wierszami zaczyna się
+   równo z tekstem. --- */
+.nawigacja, .u-dzialy { --pod-pierscieniem: var(--pasek-tlo); }
+.u-dzialy { gap: 0.75rem; padding: 0.75rem; background: var(--pasek-tlo); }
+.ustawienia-cialo { grid-template-columns: 14rem minmax(0, 1fr); }
+.u-dzialy button[data-barwa] {
+  min-height: 2.5rem; gap: 0.5rem; padding: 0 1rem; border-radius: 1.25rem;
+  background: color-mix(in srgb, var(--h) var(--nacisk), var(--pole-widoku));
+  font-weight: 500; color: var(--tekst); box-shadow: var(--przycisk-cien);
+}
+.u-dzialy button[data-barwa]:hover:not(:disabled) { background: color-mix(in srgb, var(--h) var(--nacisk-kursor), var(--pole-widoku)); box-shadow: var(--przycisk-cien-najechanie); translate: 0 -1px; }
+.u-dzialy button[data-barwa]:active:not(:disabled) { scale: 0.97; translate: none; box-shadow: var(--przycisk-cien-wcisniety); }
+.u-dzialy button[data-barwa] .nazwa { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.u-dzialy .kafel-ikony svg.i { display: block; margin: 0; width: 14px; height: 14px; stroke-width: 1.7; color: #ffffff; }
+.u-dzialy button[data-barwa][aria-current="page"] {
+  background-color: var(--wybrany-widok);
+  background-image: linear-gradient(105deg, transparent 38%, color-mix(in srgb, var(--h) var(--polysk), transparent) 50%, transparent 62%);
+  background-size: 260% 100%; background-repeat: no-repeat; background-position: 0 0;
+  font-weight: var(--gruby);
+  box-shadow: var(--przycisk-cien), 0 0 0 2px var(--pod-pierscieniem), 0 0 0 4px var(--akcent), 0 4px 12px color-mix(in srgb, var(--h) var(--cien-widoku), transparent);
+  animation: polysk-widoku 1.2s ease-in-out 1;
+}
+.nawigacja button[data-barwa]:is([aria-current="page"], [aria-pressed="true"]) { box-shadow: var(--przycisk-cien), 0 0 0 2px var(--pod-pierscieniem), 0 0 0 4px var(--akcent), 0 4px 12px color-mix(in srgb, var(--h) var(--cien-widoku), transparent); }
+/* Grupy: karta jak w Porównywarkach (14 px, włosek i miękki cień), w ciemnym czerń z włoskiem. */
+dialog.ustawienia .lista {
+  border-radius: 14px; background: var(--grupa);
+  box-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.12), 0 1px 2px rgb(0 0 0 / 0.08), 0 4px 16px rgb(0 0 0 / 0.08);
+}
+:root[data-motyw="ciemny"] dialog.ustawienia .lista { background: #000000; box-shadow: 0 0 0 0.5px rgb(255 255 255 / 0.18); }
+dialog.ustawienia .lista > .wiersz { position: relative; min-height: 3.25rem; padding: 0.625rem 1rem; border-top: 0; }
+dialog.ustawienia .lista > .wiersz + .wiersz::before {
+  content: ""; position: absolute; top: 0; left: 1rem; right: 0; height: 1px; background: var(--obwodka); pointer-events: none;
+}
+dialog.ustawienia .grupa { gap: 0.75rem; }
+dialog.ustawienia .grupa > h3 { font-size: var(--maly); letter-spacing: var(--sledzenie-maly); color: var(--drugi-plan); padding: 0 1rem; }
+dialog.ustawienia .dialog-tresc { gap: 1.5rem; padding: 1.5rem 1.5rem 2rem; }
+@media (max-width: 760px) {
+  .ustawienia-cialo { grid-template-columns: minmax(0, 1fr); }
+  .u-dzialy { background: var(--podklad); }
+  .u-dzialy button[data-barwa] { min-height: 3.5rem; border-radius: 14px; }
+  .u-dzialy button[data-barwa] > svg.i { display: block; margin-left: auto; color: var(--drugi-plan); }
+}
+/* Napisy w pigułkach, w „Nowa notatka” i tytuły arkuszy: wiersz 24 px (zadanie 23). Przy skali 150 % pole napisu stoi
+   wtedy na pełnym pikselu ekranu, a wersaliki Inter najwyżej 0,3 px od środka przycisku (zmierzone w oknie programu,
+   krawędzie liter z dokładnością do ułamka piksela). W wierszu 22 px stały 0,5 px za nisko: przycisk 40 px minus
+   wiersz 22 px to 27 pikseli ekranu, więc pole napisu wypadało w pół piksela. */
+:is(.nawigacja, .u-dzialy) button[data-barwa] :is(.nazwa, .licznik), .nowa-notatka > span, .dialog-naglowek .heading, button.zabarwiony { line-height: 1.5rem; }
+/* Na dotyku napisy w pigułkach mają 17 px, jak reszta menu (reguła dotyku przegrywała z kolorowymi pigułkami). */
+@media (pointer: coarse) {
+  .nawigacja button[data-barwa] { font-size: var(--tresc); letter-spacing: var(--sledzenie-tresc); }
+}
+/* Ściąga „i” w kółku 32 px, 8 px od Ustawień: przy pasku 216 px napis „Ustawienia” mieści się cały. */
+.stopka-paska .dol-paska { grid-template-columns: minmax(0, 1fr) 2rem; column-gap: 0.5rem; }
+.stopka-paska > .info { width: 2rem; height: 2rem; bottom: 0.25rem; }
+@media (pointer: coarse) {
+  .stopka-paska .dol-paska { grid-template-columns: minmax(0, 1fr) 3rem; }
+  .stopka-paska > .info { width: 3rem; height: 3rem; bottom: 0; }
+}
+/* Pływający pasek formatowania (zadanie 7): nad zaznaczeniem albo przy kursorze, chwyt w wolnym miejscu przesuwa. */
+.panel-formatu.plywajacy { position: fixed; top: 0; left: 0; z-index: 60; cursor: grab; }
+.panel-formatu.plywajacy.ciagniety { cursor: grabbing; }
+.panel-formatu.plywajacy button { cursor: pointer; }
+/* Kosz (zadania 30 i 32): zdanie o koszu, pod nim „Opróżnij kosz…” i mała ikonka „Odzyskaj usunięte” w jednym rzędzie co 12 px. */
+.gora-kosza { display: grid; gap: 0.75rem; padding: 0 0.25rem 0.75rem; }
+.gora-kosza .uwaga-kosza { padding: 0; }
+.akcje-kosza { display: flex; align-items: center; gap: 0.75rem; }
+.akcje-kosza .pigulka { min-height: 2rem; padding: 0 1rem; }
+.akcje-kosza .ikona, #zastepcza .odzyskaj { width: 2rem; height: 2rem; padding: 0; border-radius: 50%; background: var(--przycisk-okragly, var(--przycisk)); color: var(--znak-przycisku, var(--drugi-plan)); }
+.akcje-kosza .ikona svg.i, #zastepcza .odzyskaj svg.i { width: 16px; height: 16px; }
+.uwaga-rozmiaru { color: var(--blad); }
+@media (pointer: coarse) {
+  .akcje-kosza .pigulka { min-height: 3rem; }
+  .akcje-kosza .ikona, #zastepcza .odzyskaj { width: 3rem; height: 3rem; }
+}
+/* Alert jak w macOS (ui.js, alertMacOS): wąska karta, ikona, pogrubiony tytuł, krótki opis i dwa przyciski równej
+   szerokości, główny po prawej w akcencie. */
+dialog.alert { width: min(20rem, calc(100vw - 48px)); padding: 1.5rem 1.25rem 1.25rem; align-items: center; gap: 0.5rem; text-align: center; }
+dialog.alert .alert-znak {
+  display: grid; place-items: center; width: 3.5rem; height: 3.5rem; margin-bottom: 0.5rem; border-radius: 0.875rem; color: #ffffff;
+  background: linear-gradient(180deg, #98989d, #48484a); box-shadow: inset 0 0.5px 0 rgb(255 255 255 / 0.35), 0 2px 6px rgb(0 0 0 / 0.18);
+}
+dialog.alert .alert-znak svg.i { width: 28px; height: 28px; stroke-width: 1.4; }
+dialog.alert .heading { line-height: 1.5rem; }
+dialog.alert p { color: var(--drugi-plan); }
+dialog.alert .alert-przyciski { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; width: 100%; margin-top: 0.75rem; }
+dialog.alert .alert-przyciski button { min-height: 2.25rem; padding: 0 0.5rem; white-space: nowrap; }
+/* Znacznik pod listą (zadanie 20, Jacek: „na dole taki znacznik i jego można rozciągać albo dwuklik … do default”), taki sam
+   jak kreska pod listą w panelu Sesji Kiro: 36 × 4 px, ledwo widoczny, pod kursorem wyraźniejszy, przy ręcznej wysokości
+   w akcencie. Stoi pod ostatnim kafelkiem, jak w Sesjach Kiro, a nie przyklejony do dołu kolumny: przyklejony przykrywał
+   środek ostatniego widocznego kafelka (Ctrl+klik trafiał w znacznik, test układu 22.10.2026). Przy przeciąganiu lista
+   przewija się razem z rosnącymi kafelkami, więc znacznik zostaje pod kursorem (js/uchwyty.js). Chwyta tylko pole
+   64 × 24 px wokół kreski. Przy zaznaczaniu znika, bo na dole stoi wtedy pasek działań. */
+.kolumna-listy:has(> .uchwyt-kafli) { padding-bottom: 0.25rem; }
+.uchwyt-kafli { position: relative; display: grid; place-items: center; height: 1.75rem; margin: 0.25rem -0.5rem 0; pointer-events: none; touch-action: none; outline: none; }
+body.zaznaczanie .uchwyt-kafli { visibility: hidden; }
+@media (max-width: 760px) { .kolumna-listy:has(> .uchwyt-kafli) { padding-bottom: 1rem; } }
+.uchwyt-kafli::before { content: ""; grid-area: 1 / 1; width: 4rem; height: 1.5rem; border-radius: 0.75rem; pointer-events: auto; cursor: ns-resize; }
+.uchwyt-kafli::after { content: ""; grid-area: 1 / 1; width: 36px; height: 4px; border-radius: 2px; background: var(--drugi-plan); opacity: 0.35; transition: opacity 160ms ease; pointer-events: none; }
+.uchwyt-kafli:hover::after, .uchwyt-kafli.ciagniety::after { opacity: 0.8; }
+.uchwyt-kafli.reczna::after { background: var(--akcent); opacity: 0.7; }
+.uchwyt-kafli:focus-visible::before { outline: 2px solid var(--akcent); outline-offset: -2px; }
+body.ciagniecie-kafli, body.ciagniecie-kafli * { cursor: ns-resize !important; user-select: none !important; }
+#zastepcza:not([hidden]) ~ .uchwyt-kafli { display: none; }
+@media (max-width: 760px) { .uchwyt-kafli { display: none; } }
+/* Wyższe kafelki: podgląd w 2–5 liniach, każda linia notatki osobno; kafelki równej wysokości, tytuł u góry. */
+.wpis { min-height: calc(4rem + (var(--linie-podgladu, 1) - 1) * 1.25rem); }
+.wysokie-kafle .wpis { align-items: flex-start; }
+.wysokie-kafle .wpis-w2 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: var(--linie-podgladu); overflow: hidden; white-space: normal; }
+.wysokie-kafle .wpis-meta { margin-right: 0.5rem; }
+.wysokie-kafle .wpis-uwaga { display: inline-block; margin-right: 0.5rem; }
+.wysokie-kafle .wpis-podglad { white-space: pre-line; }
+.wysokie-kafle .wpis-miniatura { width: calc(2.75rem + (var(--linie-podgladu) - 1) * 0.75rem); height: calc(2.75rem + (var(--linie-podgladu) - 1) * 0.75rem); }
+/* Szary widok (Kosz, Ustawienia): przebłysk w akcencie, bo szara smuga na białej pigułce wyglądała jak smuga brudu. */
+:is(.nawigacja, .u-dzialy) button[data-barwa="szary"]:is([aria-current="page"], [aria-pressed="true"]) {
+  background-image: linear-gradient(105deg, transparent 38%, color-mix(in srgb, var(--akcent) 22%, transparent) 50%, transparent 62%);
+}
+/* Ściąga w dwóch kolumnach kart (reguła ikonka-i, „Porządek w ściądze”; 22.10.2026: jedna kolumna nie mieściła się w oknie
+   768 px). Każda kolumna ma swoje części (js/sciaga.js, .sciaga-kolumna), więc nie ma dziur: z lewej Przyciski i Prawy klik,
+   z prawej Przeciąganie i Skróty. Każda część to karta z małym nagłówkiem 8 px nad nią. Przyciski po dwa w rzędzie, reszta
+   jedna pod drugą; znak w kolumnie 28 px, opis w jednej linii od tego samego miejsca. Poniżej 860 px jedna kolumna. */
+dialog.sciaga { width: min(56rem, calc(100vw - 48px)); }
+.sciaga-kolumna { display: grid; gap: 1.5rem; align-content: start; min-width: 0; }
+.sciaga-czesc { gap: 0.5rem; }
+@media (min-width: 861px) {
+  .sciaga-tresc { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  .sciaga-lista { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem 1rem; }
+  .sciaga-lista.klawisze { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 860px) { .sciaga-kolumna { display: contents; } }
+.sciaga-czesc > .sciaga-lista {
+  gap: 0.75rem; padding: 0.875rem 1rem; border-radius: 14px; background: var(--grupa, var(--plyta));
+  box-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.12), 0 1px 2px rgb(0 0 0 / 0.06), 0 4px 14px rgb(0 0 0 / 0.06);
+}
+:root[data-motyw="ciemny"] .sciaga-czesc > .sciaga-lista { background: #000000; box-shadow: 0 0 0 0.5px rgb(255 255 255 / 0.18); }
+.sciaga-czesc > h3 { padding: 0 0.25rem; }
+.sciaga-pozycja > span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Skróty: klawisze w kolumnie 120 px (najszersza para „Ctrl+Z Ctrl+Y” ma 116 px), więc opisy zaczynają się w jednej linii. */
+.sciaga-lista.klawisze .sciaga-klawisze { min-width: 7.5rem; }
+.sciaga-lista.klawisze > .sciaga-pozycja > span.sciaga-znak { margin-right: calc(7.5rem - 1.75rem); }
+/* Przestawianie w Ustawieniach (zadanie 27): grupę chwyta się za nagłówek, pozycję za jej napis (js/kolejnosc.js).
+   Kreska celu jest wspólna (.kreska-celu niżej): między grupami w połowie przerwy 24 px, między wierszami na kresce
+   między nimi, w obu wypadkach od tekstu do tekstu (16 px od brzegów karty). Obraz przeciągania to cały wiersz na tle
+   karty. Nagłówek z fokusem z klawiatury ma o 4 px więcej pola z góry i z dołu, bez przesuwania układu. Grupy, do
+   których przeciągana rzecz nie wejdzie, są przygaszone (reguła Jacka z 21.10.2026). */
+dialog.ustawienia .grupa { transition: opacity 150ms ease; }
+dialog.ustawienia .grupa > h3[tabindex] { padding-block: 0.25rem; margin-block: -0.25rem; border-radius: 6px; }
+dialog.ustawienia .wiersz.obraz-przeciagania { background: var(--grupa); border-radius: 10px; }
+:root[data-motyw="ciemny"] dialog.ustawienia .wiersz.obraz-przeciagania { background: #1c1c1e; }
+dialog.ustawienia .wiersz.obraz-przeciagania::before { display: none; }
+[data-przestawiane] { transition: opacity 150ms ease; }
+.nie-tu { opacity: 0.4; }
+dialog.ustawienia .grupa > .lista.nie-tu { opacity: 1; }
+/* Kreska celu (js/kolejnosc.js, pokazKreske): jedna, nad wszystkim, w połowie przerwy, w której stanie przeciągana rzecz. */
+.kreska-celu { position: fixed; z-index: 1000; border-radius: 1px; background: var(--link); pointer-events: none; }
+/* Porządki AI od nowa (zadanie 29, Jacek: „wszystko jest zbite jak cholera … chaos”). Jak Ustawienia: szare tło, białe karty
+   z rogami 14 px, włoskiem i miękkim cieniem, nagłówek grupy drugim planem nad kartą, grupy co 24 px, w grupie 12 px, pigułki
+   co 16 px, rzędy pigułek co 12 px. Wypełniony przycisk w oknie jest jeden (Nowa notatka), więc działania Porządków są
+   zabarwione. Wybrany zakres to biała pigułka z pierścieniem, jak wybrany widok, a pogrubienie nie przesuwa sąsiadów, bo
+   pigułka od razu rezerwuje szerokość pogrubionego napisu (data-napis). Do 23.10.2026 kontener nazywał się „ai”, tak jak
+   plakietka typu zmiany (.chip.ai), i plakietka dostawała jego wypełnienie: wielkie fioletowe plamy w propozycjach i w historii. */
+#widok-ai { min-height: 100%; background: var(--podklad); }
+/* Pasek nad Porządkami w tym samym szarym, bez białego pasa nad kartami (kreska pod paskiem zostaje). */
+body[data-ekran="ai"] .naglowek :is(.n-tresc, .przyciski-okna) { background: var(--podklad); }
+/* Na wąskim ekranie dolny pasek Porządków byłby pusty (narzędzia są tylko przy notatce, licznik przy liście): treść bierze miejsce. */
+body[data-ekran="ai"] .dol { display: none; }
+.porzadki-wstep { display: grid; gap: 0.5rem; padding: 0 1rem; }
+.porzadki-pola { display: grid; gap: 1.5rem; min-inline-size: 0; margin: 0; padding: 0; border: 0; transition: opacity 150ms ease; }
+.porzadki-pola:disabled { opacity: 0.45; }
+.porzadki .grupa { gap: 0.75rem; }
+.porzadki .grupa > h3 { font-size: var(--maly); letter-spacing: var(--sledzenie-maly); color: var(--drugi-plan); padding: 0 1rem; }
+.porzadki .grupa > :is(p, .caption) { padding: 0 1rem; }
+.porzadki .lista { border-radius: 14px; background: var(--grupa); box-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.12), 0 1px 2px rgb(0 0 0 / 0.08), 0 4px 16px rgb(0 0 0 / 0.08); }
+:root[data-motyw="ciemny"] .porzadki .lista { background: #000000; box-shadow: 0 0 0 0.5px rgb(255 255 255 / 0.18); }
+.porzadki .lista > :is(.wiersz, .propozycja) { position: relative; border-top: 0; }
+.porzadki .lista > .wiersz { min-height: 3.25rem; padding: 0.75rem 1rem; }
+.porzadki .lista > :is(.wiersz, .propozycja) + :is(.wiersz, .propozycja)::before {
+  content: ""; position: absolute; top: 0; left: 1rem; right: 0; height: 1px; background: var(--obwodka); pointer-events: none;
+}
+/* Kreska między propozycjami zaczyna się równo z tekstem: za polem wyboru (20 px) i odstępem (16 px). */
+.porzadki .lista > .propozycja + .propozycja::before { left: 3.25rem; }
+.karta-polecenia { display: grid; gap: 1rem; padding: 1rem; }
+.porzadki .ai-polecenie input { min-height: 2.75rem; padding: 0 1rem; border-radius: 12px; font-size: var(--tresc); letter-spacing: var(--sledzenie-tresc); }
+.porzadki .chipy { gap: 0.75rem 1rem; }
+.porzadki :is(button.chip, label.chip) { min-height: 2.25rem; padding: 0 1rem; }
+/* Zakres: osobne pigułki bez kółek wyboru. Kółko zostaje dla klawiatury i czytnika ekranu, fokus pokazuje obwódka pigułki. */
+.porzadki .wybor label.chip { position: relative; padding: 0 1.25rem; }
+.wybor label.chip > input[type="radio"] { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }
+.wybor label.chip > span { display: inline-grid; justify-items: center; }
+.wybor label.chip > span::after { content: attr(data-napis); height: 0; overflow: hidden; visibility: hidden; font-weight: var(--gruby); }
+/* Wybrany zakres przy wyborze przebłyskuje raz w akcencie, jak wybrany widok Kosz albo Ustawienia: stały połysk
+   rozpraszałby przy czytaniu propozycji. */
+.wybor label.chip:has(input:checked) {
+  background-color: var(--wybrany-widok);
+  background-image: linear-gradient(105deg, transparent 38%, color-mix(in srgb, var(--akcent) 22%, transparent) 50%, transparent 62%);
+  background-size: 260% 100%; background-repeat: no-repeat; background-position: 0 0;
+  color: var(--tekst); font-weight: var(--gruby);
+  box-shadow: var(--przycisk-cien), 0 0 0 2px var(--podklad), 0 0 0 4px var(--akcent);
+  animation: polysk-widoku 1.2s ease-in-out 1;
+}
+.wybor label.chip:has(input:focus-visible) { outline: 2px solid var(--akcent); outline-offset: 5px; }
+/* Przycisk zabarwiony (Apple: tinted): tło akcentu, napis w kolorze linku, głębia jak każdy przycisk. */
+button.zabarwiony { min-height: 2.75rem; padding: 0 1.25rem; background: var(--zabarwiony-tlo); color: var(--zabarwiony-tekst); font-weight: var(--gruby); }
+button.zabarwiony:hover:not(:disabled) { background: var(--zabarwiony-tlo-kursor); }
+.porzadki .wiersz > button.zabarwiony { min-height: 2.25rem; }
+.ai-dzialania { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1rem; }
+.porzadki .propozycja { gap: 0.75rem 1rem; padding: 1rem; cursor: pointer; }
+/* Pole wyboru na wysokości wersalików pierwszej linii opisu (Inter 17/22 px): środek wersalików stoi 10,8–11,2 px od góry
+   wiersza, zależnie od skali ekranu, a pole 20 px ma środek 10 px od swojej góry, więc 1 px odstępu. Przy 2 px stało
+   1,2 px za nisko (zmierzone w 150 % i 400 %, Plik Fucken Robocze\pomiar-srodka.js, zestaw „porzadki”). */
+.porzadki .propozycja > input[type="checkbox"] { margin-top: 1px; }
+.propozycja-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; }
+/* Rodzaj zmiany drugim planem, pogrubiony, bez koloru: w karcie barwi się tylko pole wyboru (Kolorem barwisz jedną rzecz naraz). */
+.propozycja-typ { font-size: var(--maly); letter-spacing: var(--sledzenie-maly); line-height: 1.25rem; font-weight: var(--gruby); color: var(--drugi-plan); }
+.porzadki .propozycja .chipy { gap: 0.5rem; }
+/* Różnice w karcie: w ciemnym motywie karta i szare tło to czerń, więc pole różnic dostaje drugie tło. */
+:root[data-motyw="ciemny"] .porzadki .roznice { background: #1c1c1e; }
+@media (pointer: coarse) {
+  .porzadki :is(button.chip, label.chip), button.zabarwiony { min-height: 3rem; }
+}
+@media (forced-colors: active) { .kreska-celu { background: Highlight; } }
+/* Pasek nad notatką (zadanie 26): części paska (Sam tekst, grupa narzędzi, chmura, para Przypomnienie i Więcej) co 24 px,
+   przyciski w grupie co 16 px: każdy to osobna pigułka z włoskiem i cieniem, a „05 --- Jacek Design Guidelines” mówi
+   o takich rzędach „16 px apart” (dawne 12 px nie było żadnym stopniem skali). W grupie ciaśniej niż między grupami,
+   gdziekolwiek część stoi po przestawieniu. Grupa ma
+   wokół przycisków pole chwytu 4 px, a ujemny margines trzyma przyciski tam, gdzie stały. Pod kursorem w polu chwytu
+   (przerwy między przyciskami i brzeg) grupa pokazuje się jako jedna lekka kapsuła, a kursor to łapka: widać, że rusza
+   się całość. Panel formatowania pod Aa zostaje tam, gdzie był. */
+:root { --chwyt-grupy: rgb(0 0 0 / 0.06); }
+:root[data-motyw="ciemny"] { --chwyt-grupy: rgb(255 255 255 / 0.10); }
+@media (min-width: 761px) {
+  .n-tresc { column-gap: 1.5rem; }
+  #narzedzia-tekstu { margin-left: 0; }
+  .n-tresc > :is(#narzedzia-tekstu, #przyciski-edytora) { gap: 1rem; padding: 0.25rem; margin: -0.25rem; border-radius: 999px; transition: background-color 150ms ease, opacity 150ms ease; }
+  /* Części paska się nie ściskają (okrągły przycisk zostaje kołem): czego brakuje, idzie do menu Więcej. */
+  .n-tresc > :not(.rozpychacz), .n-tresc > :is(#narzedzia-tekstu, #przyciski-edytora) > button { flex-shrink: 0; }
+  .n-tresc > #narzedzia-tekstu > .panel-formatu:not(.plywajacy) { top: calc(100% + 0.25rem); left: 0.25rem; cursor: auto; }
+}
+@media (min-width: 761px) and (hover: hover) and (pointer: fine) {
+  .n-tresc > :is(#narzedzia-tekstu, #przyciski-edytora)[draggable="true"] { cursor: grab; }
+  .n-tresc > :is(#narzedzia-tekstu, #przyciski-edytora)[draggable="true"]:hover:not(:has(> button:hover, > .panel-formatu:hover)) { background: var(--chwyt-grupy); }
+  .n-tresc > #stan-sync[draggable="true"] { cursor: grab; }
+}
+/* Część paska, która w wąskiej kolumnie się nie zmieściła, stoi w menu Więcej (js/app.js, dopasujPasek). */
+#naglowek .w-menu { display: none !important; }
+/* Obrazy w notatce (zadanie 17, Jacek: „Zdjęcie, jak się wkładają, to nie wiem, co to jest”). Obraz cały, bez przycinania:
+   rzędem, każdy 12 rem wysokości i swojej szerokości, a jedyny obraz większy, do 20 rem, jak w Google Keep. Dodawany od razu
+   stoi na swoim miejscu jako kafelek „Dodaję obraz…” (js/edytor.js, kafelekDodawania), a gotowy dostaje na 1,6 s pierścień
+   w akcencie. Pierścień mówi, co doszło, więc zostaje też przy ograniczonym ruchu (Jacek ma wyłączone animacje Windows). */
+.e-obrazy { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.e-obraz { max-width: 100%; border-radius: 12px; }
+.e-obraz img { width: auto; max-width: 100%; height: 12rem; object-fit: contain; }
+.e-obrazy > .e-obraz:only-child img { height: auto; max-height: 20rem; }
+.e-obraz.dodawany { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; width: 12rem; height: 12rem; color: var(--drugi-plan); }
+.e-obraz.nowy { animation: nowy-obraz 1.6s ease-out 1 !important; }
+@keyframes nowy-obraz { from { box-shadow: 0 0 0 3px var(--akcent); } to { box-shadow: 0 0 0 3px transparent; } }
+/* Pasek nad listą: przycisk paska bocznego, Szukaj i Nowa notatka co 16 px, jak pigułki w każdym rzędzie („05 --- Jacek
+   Design Guidelines”: „16 px between pills”). Gdy napis „Szukaj” by się w polu nie zmieścił (domyślne okno 1040 px: lista
+   320 px z przyciskiem paska bocznego), pole stoi jako okrągły przycisk z lupą na końcu swojego miejsca, jak w Notatkach
+   macOS (js/app.js, dopasujSzukanie). Klik, Ctrl+F albo pisanie z listy rozwija je na całe miejsce, a Nowa notatka jest
+   wtedy samym plusem, z dymkiem. Z tekstem pole zostaje rozwinięte. Lupa ma 18 px, jak znaki w kołach obok. */
+@media (min-width: 761px) {
+  .n-lista { column-gap: 1rem; }
+  .szukajka.zwinieta:not(:focus-within):has(> input:placeholder-shown) > input {
+    flex: none; width: 2.25rem; height: 2.25rem; min-height: 0; margin-left: auto; padding: 0; cursor: pointer;
+    background: var(--przycisk-okragly); box-shadow: var(--przycisk-cien); color: transparent;
+    transition: box-shadow 120ms ease, translate 120ms ease;
+  }
+  .szukajka.zwinieta:not(:focus-within):has(> input:placeholder-shown) > input::placeholder { color: transparent; }
+  /* Lupa w polu tej samej wielkości i w tym samym miejscu co koło, z wypełnieniem 9 px: koło stoi w ułamkowym miejscu
+     (szerokość Nowej notatki zależy od napisu), a tak oba przyciągają się do tych samych pikseli ekranu. Zmierzone 23.10.2026:
+     osobne pole 18 px stało przy 150 % 0,57 px w lewo od środka koła. */
+  .szukajka.zwinieta:not(:focus-within):has(> input:placeholder-shown) > svg.i {
+    left: auto; right: 0; top: 0; box-sizing: border-box; width: 2.25rem; height: 2.25rem; padding: calc((2.25rem - 18px) / 2);
+    color: var(--znak-przycisku); transition: translate 120ms ease;
+  }
+  .szukajka.zwinieta:not(:focus-within):has(> input:placeholder-shown:hover) > input { box-shadow: var(--przycisk-cien-najechanie); }
+  .szukajka.zwinieta:not(:focus-within):has(> input:placeholder-shown:hover) > :is(input, svg.i) { translate: 0 -1px; }
+  .szukajka.zwinieta:not(:focus-within):has(> input:placeholder-shown:hover) > svg.i { color: var(--tekst); }
+  .n-lista:has(> .szukajka.zwinieta:focus-within) > #nowa,
+  .n-lista:has(> .szukajka.zwinieta > input:not(:placeholder-shown)) > #nowa { width: 2.25rem; padding: 0; }
+  .n-lista:has(> .szukajka.zwinieta:focus-within) > #nowa > span,
+  .n-lista:has(> .szukajka.zwinieta > input:not(:placeholder-shown)) > #nowa > span { display: none; }
+}
+/* Znak w kafelku ikony (pasek boczny i działy Ustawień) w polu całego kafelka, z wypełnieniem 5 px, jak lupa w kole wyżej.
+   Osobne pole 14 px stało 5 px od brzegu, czyli przy 150 % w pół piksela ekranu, i przeglądarka przyciągała je raz w lewo,
+   raz w prawo (23.10.2026: znak działu „Ogólne” piksel ekranu od środka przy oknie 1366 px). Rysunek zostaje 14 px. */
+:is(.nawigacja, .u-dzialy) button[data-barwa] .kafel-ikony > svg.i { box-sizing: border-box; width: 100%; height: 100%; padding: calc((100% - 14px) / 2); }
