@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<!-- spellcheck="false": bez czerwonych falbanek w notatkach (dziedziczy się na wszystkie pola). -->
+<!-- data-motyw: wartość startowa; js/app.js ustawia ją zawsze z motywu systemu (bez przełącznika). -->
+<html lang="pl" data-motyw="jasny" spellcheck="false">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://api.github.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="notatki-bez-serwera" content="1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <!-- Kolor paska przeglądarki za motywem systemu; po starcie js/ustawienia.js wpisuje tu kolor nagłówka. -->
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <title>Notatki</title>
+  <link rel="stylesheet" href="styl.css">
+  <!-- Krój Inter od razu, równolegle ze stylem: polskie litery są w latin-ext, więc oba pliki. -->
+  <link rel="preload" href="czcionki/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="czcionki/inter-latin-ext.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="ikona.png">
+</head>
+<!-- data-ekran jak S.ekran na starcie (js/stan.js). Bez niego wąski układ (telefon, wąskie okno)
+     chowa listę od pierwszego rysowania, aż do otwarcia i zamknięcia notatki. -->
+<body data-ekran="lista">
+
+<!-- Ikony symboliczne (16×16, obrys), używane przez <use href="#…">. -->
+<svg class="sprite" width="0" height="0" aria-hidden="true">
+  <symbol id="i-szukaj" viewBox="0.25 0.25 16 16"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
+  <symbol id="i-nowa" viewBox="0.26 -0.26 16 16"><path d="M13.5 8.5v4a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h4"/><path d="M11.6 2.4a1.4 1.4 0 0 1 2 2L8 10l-2.5.5L6 8z"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 16 16"><path d="M2.5 4h11M2.5 8h11M2.5 12h11"/></symbol>
+  <symbol id="i-pasek" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="2"/><path d="M6 3v10"/></symbol>
+  <symbol id="i-wstecz" viewBox="0 0 16 16"><path d="M13 8H3M7 4 3 8l4 4"/></symbol>
+  <symbol id="i-siatka" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="4.5" height="4.5" rx="1"/><rect x="9" y="2.5" width="4.5" height="4.5" rx="1"/><rect x="2.5" y="9" width="4.5" height="4.5" rx="1"/><rect x="9" y="9" width="4.5" height="4.5" rx="1"/></symbol>
+  <symbol id="i-lista" viewBox="0 0 16 16"><rect x="2.5" y="3" width="11" height="3.5" rx="1"/><rect x="2.5" y="9.5" width="11" height="3.5" rx="1"/></symbol>
+  <symbol id="i-ai" viewBox="0.25 0 16 16"><path d="M7 1.5l1.4 3.6L12 6.5 8.4 7.9 7 11.5 5.6 7.9 2 6.5l3.6-1.4z"/><path d="M12.5 10.3l.6 1.5 1.4.6-1.4.6-.6 1.5-.6-1.5-1.4-.6 1.4-.6z"/></symbol>
+  <symbol id="i-min" viewBox="0 0.5 16 16"><path d="M4 8.5h8"/></symbol>
+  <symbol id="i-max" viewBox="0 0 16 16"><rect x="4" y="4" width="8" height="8" rx="1"/></symbol>
+  <symbol id="i-przywroc-okno" viewBox="0 0 16 16"><rect x="3.5" y="5.5" width="7" height="7" rx="1"/><path d="M6 5.5v-1a1 1 0 0 1 1-1h4.5a1 1 0 0 1 1 1V9a1 1 0 0 1-1 1h-1"/></symbol>
+  <symbol id="i-zamknij" viewBox="0 0 16 16"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/></symbol>
+  <symbol id="i-pinezka" viewBox="0 0.25 16 16"><path d="M5.5 2.5h5M6.5 2.5v4L4 9.5h8L9.5 6.5v-4M8 9.5v4.5"/></symbol>
+  <symbol id="i-dzwonek" viewBox="0 1.25 16 16"><path d="M4 11V7a4 4 0 0 1 8 0v4l1 1.5H3z"/><path d="M6.5 14a1.5 1.5 0 0 0 3 0"/></symbol>
+<symbol id="i-powtarzaj" viewBox="0 0 16 16"><path d="M3 8V6.5A2.5 2.5 0 0 1 5.5 4H12"/><path d="M10 2l2 2-2 2"/><path d="M13 8v1.5A2.5 2.5 0 0 1 10.5 12H4"/><path d="M6 14l-2-2 2-2"/></symbol>
+  <symbol id="i-paleta" viewBox="0 0 16 16"><path d="M8 2a6 6 0 1 0 0 12c1 0 1.5-.6 1.5-1.3 0-.9-.8-1.2-.8-2 0-.7.6-1.2 1.3-1.2H12a2 2 0 0 0 2-2C14 4.4 11.3 2 8 2z"/><path d="M5 7h.01M7.5 4.8h.01M10.5 5.5h.01" stroke-width="2"/></symbol>
+  <symbol id="i-etykieta" viewBox="0 0 16 16"><path d="M2.5 3.5v4.1a1 1 0 0 0 .3.7l5 5a1 1 0 0 0 1.4 0l4.1-4.1a1 1 0 0 0 0-1.4l-5-5a1 1 0 0 0-.7-.3H3.5a1 1 0 0 0-1 1z"/><path d="M5.5 5.5h.01" stroke-width="2"/></symbol>
+  <symbol id="i-archiwum" viewBox="0 0.25 16 16"><rect x="2" y="3" width="12" height="3" rx="1"/><path d="M3 6v6.5a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V6M6.5 9h3"/></symbol>
+  <symbol id="i-z-archiwum" viewBox="0 0.25 16 16"><rect x="2" y="3" width="12" height="3" rx="1"/><path d="M3 6v6.5a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V6M8 12V8.5M6.5 10 8 8.5 9.5 10"/></symbol>
+  <symbol id="i-karteczka" viewBox="0 0 16 16"><path d="M3.5 2.5h9a1 1 0 0 1 1 1v6l-4 4h-6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z"/><path d="M13.5 9.5h-3a1 1 0 0 0-1 1v3"/></symbol>
+  <symbol id="i-kosz" viewBox="0 0 16 16"><rect x="2.5" y="3.5" width="11" height="2.5" rx="1"/><path d="M6.5 3.5v-1h3v1"/><path d="M4.5 6v6.5a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1V6M6.8 8.5v3M9.2 8.5v3"/></symbol>
+  <symbol id="i-z-kosza" viewBox="0 0 16 16"><rect x="2.5" y="3.5" width="11" height="2.5" rx="1"/><path d="M6.5 3.5v-1h3v1"/><path d="M4.5 6v6.5a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1V6M8 12.5V9M6.5 10.5 8 9l1.5 1.5"/></symbol>
+  <symbol id="i-obraz" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1.5"/><circle cx="5.8" cy="6.3" r="1.2"/><path d="M2.5 11.5 6 8l3 3 2-2 2.5 2.5"/></symbol>
+  <symbol id="i-mikrofon" viewBox="0 0.25 16 16"><rect x="6" y="2" width="4" height="7.5" rx="2"/><path d="M3.8 8a4.2 4.2 0 0 0 8.4 0M8 12.2v2.3"/></symbol>
+  <symbol id="i-pola" viewBox="0 -0.45 16 16"><path d="M2.5 4.5l1.2 1.2L6 3.4M2.5 10.5l1.2 1.2L6 9.4M8 4.5h5.5M8 10.5h5.5"/></symbol>
+  <symbol id="i-tekst" viewBox="0 0 16 16"><path d="M3 4h10M3 8h10M3 12h6"/></symbol><symbol id="i-tabela" viewBox="0 0 16 16"><rect x="2.5" y="3" width="11" height="10" rx="1.5"/><path d="M2.5 6.5h11M2.5 9.75h11M8 6.5V13"/></symbol>
+  <symbol id="i-historia" viewBox="0 0 16 16"><path d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9M2.5 2.5V5H5"/><path d="M8 5v3l2 1.5"/></symbol>
+  <symbol id="i-wiecej" viewBox="0 0 16 16"><path d="M8 3.5h.01M8 8h.01M8 12.5h.01" stroke-width="2.6"/></symbol>
+  <symbol id="i-cofnij" viewBox="0 0.75 16 16"><path d="M5 3.5 2.5 6 5 8.5"/><path d="M2.5 6h7a4 4 0 0 1 0 8H7"/></symbol>
+  <symbol id="i-link" viewBox="0 0 16 16"><path d="M6.8 9.2a3 3 0 0 0 4.2 0l2-2a3 3 0 0 0-4.2-4.2l-.8.8"/><path d="M9.2 6.8a3 3 0 0 0-4.2 0l-2 2a3 3 0 0 0 4.2 4.2l.8-.8"/></symbol>
+  <symbol id="i-kopiuj" viewBox="0.25 0 16 16"><rect x="5" y="5" width="8.5" height="8.5" rx="1.5"/><path d="M3 10.5v-7a1 1 0 0 1 1-1h7"/></symbol>
+  <symbol id="i-pobierz" viewBox="0 0 16 16"><path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10"/></symbol>
+  <symbol id="i-folder" viewBox="0 0.25 16 16"><path d="M2 4.5a1 1 0 0 1 1-1h3l1.5 1.5H13a1 1 0 0 1 1 1V12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-uchwyt" viewBox="0 0 16 16"><path d="M6 4h.01M10 4h.01M6 8h.01M10 8h.01M6 12h.01M10 12h.01" stroke-width="2.2"/></symbol>
+  <symbol id="i-gora" viewBox="0 0 16 16"><path d="M4 10l4-4 4 4"/></symbol>
+  <symbol id="i-dol" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></symbol>
+  <symbol id="i-ptaszek" viewBox="0 0 16 16"><path d="M3 8.5l3 3 7-7"/></symbol>
+  <symbol id="i-zaznacz" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="2"/><path d="M5 8.2l2 2 4-4.2"/></symbol>
+  <symbol id="i-notatka" viewBox="-0.5 0.5 16 16"><path d="M3.5 2.5h6l3 3v8a1 1 0 0 1-1 1h-8a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1z"/><path d="M9.5 2.5v3h3M5.5 8.5h5M5.5 11H9"/></symbol>
+  <symbol id="i-chmura" viewBox="0.11 -0.16 16 16"><path d="M4.5 12.5h7a3 3 0 0 0 .4-6 4 4 0 0 0-7.7-.7 3.4 3.4 0 0 0 .3 6.7z"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 16 16"><rect x="4" y="4" width="8" height="8" rx="1.5"/></symbol>
+  <symbol id="i-klodka" viewBox="0 0.25 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2M8 10v1.5"/></symbol>
+  <symbol id="i-ustawienia" viewBox="0 0 16 16"><path d="M2.5 4.5h6M11.5 4.5h2M2.5 11.5h2M7.5 11.5h6"/><circle cx="10" cy="4.5" r="1.5"/><circle cx="6" cy="11.5" r="1.5"/></symbol>
+  <symbol id="i-info" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.25"/><path d="M8 7.4v3.9"/><path d="M8 4.9h.01" stroke-width="2.1"/></symbol>
+  <symbol id="i-szerokosc" viewBox="0 0 16 16"><path d="M8 2.5v11"/><path d="M5.5 8H1.75M3.5 6.25 1.75 8 3.5 9.75M10.5 8h3.75M12.5 6.25 14.25 8 12.5 9.75"/></symbol>
+<symbol id="i-wysokosc" viewBox="0 0 16 16"><path d="M2.5 8h11"/><path d="M8 5.5V1.75M6.25 3.5 8 1.75 9.75 3.5M8 10.5v3.75M6.25 12.5 8 14.25 9.75 12.5"/></symbol>
+  <symbol id="i-mysz" viewBox="0 0 16 16"><rect x="4.25" y="1.75" width="7.5" height="12.5" rx="3.75"/><path d="M8 4.25v2"/></symbol>
+  <symbol id="i-rog" viewBox="0 0 16 16"><path d="M13.5 6 6 13.5M13.5 10.5 10.5 13.5"/></symbol>
+  <symbol id="i-dalej" viewBox="0.25 0 16 16"><path d="M6 3.5 10.5 8 6 12.5"/></symbol>
+  <symbol id="i-pelny" viewBox="0 0 16 16"><path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10"/></symbol>
+  <symbol id="i-pelny-wyjdz" viewBox="0 0 16 16"><path d="M6 2.5V6H2.5M10 2.5V6h3.5M13.5 10H10v3.5M2.5 10H6v3.5"/></symbol>
+    <!-- Pismo nad notatką (Jacek, 27.10.2026: „wolałbym, żeby była strzałeczka … a nie że to jest małe i duże litery”):
+         litera ze strzałką. Wielkość pisma w panelu formatowania: duża i mała litera. -->
+    <symbol id="i-pismo" viewBox="0.25 0 16 16"><path d="M2 13 6 3l4 10M3.6 9.5h4.8"/><path d="M13 3.5v9M11.5 5 13 3.5 14.5 5M11.5 11 13 12.5 14.5 11"/></symbol>
+    <symbol id="i-rozmiar" viewBox="0 0 16 16"><path d="M1.5 13 5 3l3.5 10M2.7 9.7h4.6"/><path d="M9.5 13 12 6.5l2.5 6.5M10.3 11h3.4"/></symbol>
+</svg>
+
+<div class="okno">
+  <!-- Nagłówek w trzech częściach, każda nad swoją kolumną: pasek boczny, lista, notatka. -->
+  <header class="naglowek" id="naglowek" data-tauri-drag-region>
+    <!-- Nad paskiem bocznym tylko miejsce do przeciągania okna. Motyw idzie za systemem, bez przełącznika. -->
+    <div class="n-pasek" data-tauri-drag-region></div>
+    <div class="n-lista" data-tauri-drag-region>
+      <button id="pasek-przelacz" class="ikona" type="button" title="Schowaj pasek boczny (F9)" aria-label="Pasek boczny" aria-controls="pasek">
+        <svg class="i" aria-hidden="true"><use href="#i-pasek"/></svg>
+      </button>
+      <!-- Pole szukania; w ciasnym pasku zwinięte do okrągłego przycisku z lupą (js/app.js, dopasujSzukanie), a wolne miejsce obok przesuwa okno. -->
+      <div class="szukajka" role="search" id="szukajka" data-tauri-drag-region>
+        <svg class="i" aria-hidden="true"><use href="#i-szukaj"/></svg>
+        <input id="szukaj" type="search" placeholder="Szukaj" aria-label="Szukaj notatek" autocomplete="off" spellcheck="false">
+        <button id="szukaj-wyczysc" class="ikona wyczysc" type="button" title="Wyczyść szukanie" aria-label="Wyczyść wyszukiwanie" hidden>
+          <svg class="i" aria-hidden="true"><use href="#i-zamknij"/></svg>
+        </button>
+      </div>
+      <h1 id="tytul-widoku" class="heading naglowek-tytul" hidden></h1>
+      <button id="anuluj-zaznaczanie" type="button" hidden>Anuluj</button>
+      <!-- Nowa notatka z napisem: jedyny wyróżniony przycisk w oknie (Jacek, 21.10.2026: „not obvious … takie małe”). -->
+      <button id="nowa" class="sugerowany pigulka nowa-notatka" type="button" title="Utwórz notatkę (Ctrl+N)" aria-label="Nowa notatka">
+        <svg class="i" aria-hidden="true"><use href="#i-plus"/></svg><span>Nowa notatka</span>
+      </button>
+    </div>
+    <div class="n-tresc" data-tauri-drag-region>
+      <!-- Wstecz (tylko na wąskim ekranie) stoi zawsze pierwszy. Reszta paska zmienia miejsce przeciąganiem (js/app.js, zadanie 26). -->
+      <button id="wstecz" class="ikona" type="button" title="Wróć do listy (Esc)" aria-label="Wstecz">
+        <svg class="i" aria-hidden="true"><use href="#i-wstecz"/></svg>
+      </button>
+      <!-- Sam tekst (js/app.js, przelaczSamTekst): pasek boczny i lista zjeżdżają do lewej ściany, okno na cały ekran. -->
+      <button id="sam-tekst" class="ikona" type="button" title="Sam tekst, na cały ekran (F11)" aria-label="Sam tekst, na cały ekran" aria-pressed="false">
+        <svg class="i" aria-hidden="true"><use href="#i-pelny"/></svg>
+      </button>
+      <!-- Częste narzędzia tekstu. Na wąskim ekranie js/app.js przenosi je na dolny pasek. -->
+      <div id="narzedzia-tekstu" class="narzedzia" role="toolbar" aria-label="Wstawianie" hidden>
+        <button id="e-aa" class="ikona" type="button" title="Formatuj tekst" aria-label="Formatowanie" aria-expanded="false" aria-controls="panel-formatu"><svg class="i" aria-hidden="true"><use href="#i-pismo"/></svg></button>
+        <button id="e-typ" class="ikona" type="button" title="Zamień na listę z polami" aria-label="Zamień na listę z polami wyboru"><svg class="i" aria-hidden="true"><use href="#i-pola"/></svg></button>
+        <button id="e-obraz" class="ikona" type="button" title="Dodaj obraz" aria-label="Dodaj obraz"><svg class="i" aria-hidden="true"><use href="#i-obraz"/></svg></button>
+        <button id="e-glos" class="ikona" type="button" title="Nagraj notatkę głosową" aria-label="Nagraj notatkę głosową"><svg class="i" aria-hidden="true"><use href="#i-mikrofon"/></svg></button>
+        <div id="panel-formatu" class="panel-formatu" hidden>
+          <div id="pasek-formatu" class="pasek-formatu" role="toolbar" aria-label="Formatowanie tekstu">
+            <button type="button" class="ikona fmt" data-fmt="pogrubienie" title="Pogrub (Ctrl+B)" aria-label="Pogrubienie"><b>B</b></button>
+            <button type="button" class="ikona fmt" data-fmt="kursywa" title="Pochyl (Ctrl+I)" aria-label="Kursywa"><i>I</i></button>
+            <button type="button" class="ikona fmt" data-fmt="podkreslenie" title="Podkreśl (Ctrl+U)" aria-label="Podkreślenie"><u>U</u></button>
+            <button type="button" class="ikona fmt" data-fmt="przekreslenie" title="Przekreśl (Ctrl+Shift+S)" aria-label="Przekreślenie"><s>S</s></button>
+            <button type="button" class="ikona fmt" data-fmt="kod" title="Pismo maszynowe, na przykład do kodu (Ctrl+Shift+K)" aria-label="Pismo maszynowe"><code>&lt;&gt;</code></button>
+            <button id="fmt-rozmiar" type="button" class="ikona" title="Zmień rozmiar pisma (Ctrl+Shift+. i Ctrl+Shift+,)" aria-label="Rozmiar pisma" aria-haspopup="menu"><svg class="i" aria-hidden="true"><use href="#i-rozmiar"/></svg></button>
+            <button id="fmt-kolor" type="button" class="ikona" title="Zmień kolor tekstu" aria-label="Kolor tekstu" aria-haspopup="menu"><span class="fmt-litery fmt-kolor-ikona">A</span></button>
+            <button id="fmt-tlo" type="button" class="ikona" title="Wyróżnij tłem" aria-label="Wyróżnienie tłem" aria-haspopup="menu"><span class="fmt-litery fmt-tlo-ikona">A</span></button>
+            <button id="fmt-tabela" type="button" class="ikona" title="Wstaw tabelę" aria-label="Wstaw tabelę"><svg class="i" aria-hidden="true"><use href="#i-tabela"/></svg></button>
+            <button type="button" class="ikona fmt" data-fmt="wyczysc" title="Usuń formatowanie (Ctrl+\)" aria-label="Usuń formatowanie"><span class="fmt-litery">A̶</span></button>
+          </div>
+        </div>
+      </div>
+      <span class="rozpychacz" data-tauri-drag-region></span>
+      <span id="stan-sync" class="ikona" hidden></span>
+      <!-- Pinezka, kolor, przypomnienie i Więcej po prawej, jak w Google Keep (Jacek, 27.10.2026: „zrób to, co sugerujesz”). -->
+      <div id="przyciski-edytora" class="przyciski-edytora" role="group" aria-label="Działania notatki" hidden>
+        <button id="e-przypnij" class="ikona" type="button" title="Przypnij notatkę" aria-label="Przypnij" aria-pressed="false"><svg class="i" aria-hidden="true"><use href="#i-pinezka"/></svg></button>
+        <button id="e-kolor" class="ikona" type="button" title="Zmień kolor notatki" aria-label="Kolor notatki" aria-haspopup="menu"><svg class="i" aria-hidden="true"><use href="#i-paleta"/></svg></button>
+        <button id="e-przypomnienie" class="ikona" type="button" title="Ustaw przypomnienie" aria-label="Przypomnienie" aria-haspopup="dialog"><svg class="i" aria-hidden="true"><use href="#i-dzwonek"/></svg></button>
+        <button id="e-menu" class="ikona" type="button" title="Pokaż więcej działań (F10)" aria-label="Więcej działań" aria-haspopup="menu"><svg class="i" aria-hidden="true"><use href="#i-wiecej"/></svg></button>
+      </div>
+    </div>
+    <div class="przyciski-okna">
+      <button id="okno-min" type="button" aria-label="Minimalizuj"><svg class="i" aria-hidden="true"><use href="#i-min"/></svg></button>
+      <button id="okno-max" type="button" aria-label="Maksymalizuj"><svg class="i" aria-hidden="true"><use href="#i-max"/></svg></button>
+      <button id="okno-zamknij" class="zamknij-okno" type="button" title="Schowaj do zasobnika (Ctrl+W)" aria-label="Zamknij okno"><svg class="i" aria-hidden="true"><use href="#i-zamknij"/></svg></button>
+    </div>
+  </header>
+
+  <div id="banery"></div>
+
+  <div class="uklad">
+    <nav id="pasek" class="pasek-boczny" aria-label="Widoki">
+      <ul class="nawigacja" id="widoki">
+        <!-- Widok to pigułka z kafelkiem ikony w barwie widoku, jak w Porównywarkach AI (styl.css, „Pasek boczny”). -->
+        <li><button type="button" data-widok="notatki" data-barwa="niebieski"><span class="kafel-ikony" aria-hidden="true"><svg class="i"><use href="#i-notatka"/></svg></span><span class="nazwa">Notatki</span><span class="licznik" id="licz-notatki"></span></button></li>
+        <li><button type="button" data-widok="przypomnienia" data-barwa="indygo"><span class="kafel-ikony" aria-hidden="true"><svg class="i"><use href="#i-dzwonek"/></svg></span><span class="nazwa">Przypomnienia</span><span class="licznik" id="licz-przypomnienia"></span></button></li>
+        <li><button type="button" data-widok="archiwum" data-barwa="braz"><span class="kafel-ikony" aria-hidden="true"><svg class="i"><use href="#i-archiwum"/></svg></span><span class="nazwa">Archiwum</span><span class="licznik" id="licz-archiwum"></span></button></li>
+        <li><button type="button" data-widok="kosz" data-barwa="szary"><span class="kafel-ikony" aria-hidden="true"><svg class="i"><use href="#i-kosz"/></svg></span><span class="nazwa">Kosz</span><span class="licznik" id="licz-kosz"></span></button></li>
+      </ul>
+      <div class="stopka-paska">
+        <ul class="nawigacja dol-paska">
+          <li><button type="button" id="nav-ai" data-barwa="turkus"><span class="kafel-ikony" aria-hidden="true"><svg class="i"><use href="#i-ai"/></svg></span><span class="nazwa">Porządki AI</span></button></li>
+          <li><button type="button" id="nav-ustawienia" data-barwa="szary" title="Otwórz ustawienia (Ctrl+,)"><span class="kafel-ikony" aria-hidden="true"><svg class="i"><use href="#i-ustawienia"/></svg></span><span class="nazwa">Ustawienia</span></button></li>
+        </ul>
+        <!-- Ściąga „i” (js/sciaga.js): ikonki, prawy klik, przeciąganie i skróty w jednym arkuszu, przygaszona jak ikony paska. -->
+        <button id="nav-info" class="ikona info" type="button" title="Pokaż ściągę (F1)" aria-label="Ściąga" aria-haspopup="dialog"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg></button>
+      </div>
+    </nav>
+    <!-- Uchwyty szerokości (js/uchwyty.js): niewidoczne, póki kursor nie stanie na krawędzi kolumny. -->
+    <div id="uchwyt-paska" class="uchwyt" role="separator" aria-orientation="vertical" aria-controls="pasek" aria-label="Szerokość paska bocznego" aria-valuemin="168" aria-valuemax="360" tabindex="0" aria-description="Przeciągnij, żeby zwęzić albo schować pasek. Dwuklik przywraca szerokość"></div>
+
+    <section id="kolumna-listy" class="kolumna-listy" aria-label="Notatki" tabindex="-1">
+      <div id="sekcje"></div>
+      <div id="zastepcza" class="zastepcza" hidden></div>
+      <div id="wiecej-wynikow" class="wiecej-wynikow"></div>
+      <!-- Znacznik pod listą (js/uchwyty.js, zadanie 20): w dół wyższe kafelki z większym podglądem, dwuklik wraca do domyślnej. -->
+      <div id="uchwyt-kafli" class="uchwyt-kafli" role="separator" aria-orientation="horizontal" aria-label="Wysokość kafelków" aria-valuemin="1" aria-valuemax="5" tabindex="0" title="Przeciągnij, żeby zmienić wysokość kafelków" aria-description="Dwuklik przywraca domyślną wysokość"></div>
+    </section>
+    <div id="uchwyt-listy" class="uchwyt" role="separator" aria-orientation="vertical" aria-controls="kolumna-listy" aria-label="Szerokość listy notatek" aria-valuemin="260" aria-valuemax="560" tabindex="0" aria-description="Przeciągnij, żeby zmienić szerokość listy. Dwuklik przywraca szerokość"></div>
+
+    <main id="tresc" class="tresc" tabindex="-1">
+      <div id="pusty-panel" class="pusty-panel"><p id="pusty-panel-tekst"></p></div>
+
+      <section id="widok-edytor" hidden>
+        <div class="edytor">
+          <div id="e-karta" class="edytor-karta">
+            <div id="e-konflikt" class="konflikt" hidden>
+              <p class="heading">Ta notatka była zmieniana na dwóch urządzeniach naraz</p>
+              <p class="caption">Obie wersje zmienionego fragmentu są poniżej, rozdzielone linią. Zostaw właściwą i usuń linię.</p>
+              <button id="e-konflikt-gotowe" type="button">Gotowe</button>
+            </div>
+            <!-- Nad kartką jak w Notatkach Apple: na środku data ostatniej zmiany, pod nią przypomnienie, gdy jest. -->
+            <div class="e-naglowek">
+              <p id="e-stan" class="caption przygaszony" role="status"></p>
+              <span id="e-nagrywanie" class="chip ostrzezenie" hidden role="status"></span>
+              <button id="e-termin" class="e-termin" type="button" hidden></button>
+            </div>
+            <!-- Tytuł zawija się w kolejne wiersze. Niewidoczna kopia tekstu (data-kopia) nadaje polu wysokość. -->
+            <div class="e-tytul-ramka"><textarea id="e-tytul" class="e-tytul" rows="1" placeholder="Tytuł" aria-label="Tytuł notatki" autocomplete="off" enterkeyhint="next"></textarea></div>
+            <div id="e-obrazy" class="e-obrazy"></div>
+            <div id="e-tekst" class="e-tekst" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Treść notatki" data-puste="Notatka…" spellcheck="false"></div>
+            <div id="e-lista" class="e-lista" hidden></div>
+            <div id="e-nagrania" class="e-lista"></div>
+            <div id="e-linki" class="e-linki"></div>
+            <!-- Trafienie z szukania: fioletowa kapsułka nad tekstem (js/edytor.js, pokazTrafienie). -->
+            <div id="e-trafienie" class="e-trafienie" aria-hidden="true" hidden></div>
+            <!-- Uchwyt położenia tekstu: niewidoczna kreska po lewej stronie tekstu (js/uchwyty.js). -->
+            <div id="e-polozenie" class="e-polozenie" role="slider" aria-orientation="horizontal" aria-label="Położenie tekstu" aria-valuemin="0" aria-valuemax="100" tabindex="0" aria-description="Przeciągnij, żeby przesunąć tekst. Dwuklik przywraca położenie" hidden></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Porządki AI (zadanie 29, Jacek: „wszystko jest zbite jak cholera … chaos”): jak Ustawienia, szare tło, białe karty,
+           grupy co 24 px, nagłówek grupy drugim planem nad kartą. Kontener to „porzadki”, bo klasa „ai” to plakietka typu zmiany. -->
+      <section id="widok-ai" hidden>
+        <div class="porzadki">
+          <div class="porzadki-wstep">
+            <h2 class="title-2">Porządki AI</h2>
+            <p class="przygaszony">AI proponuje zmiany, Ty wybierasz. Każdą da się cofnąć.</p>
+          </div>
+          <!-- Bez AI na tym urządzeniu (js/ai.js, rysujStan): Windows bez Kiro CLI albo telefon i przeglądarka bez serwera. -->
+          <div id="ai-niedostepne" class="lista" hidden>
+            <div class="wiersz">
+              <div class="wiersz-tekst"><span id="ai-niedostepne-tytul" class="heading"></span><span id="ai-niedostepne-opis" class="caption przygaszony"></span></div>
+            </div>
+          </div>
+          <form id="ai-formularz">
+            <!-- Bez AI pola stoją przygaszone (js/ai.js, rysujStan): widać, co będzie, a karta nad nimi mówi, gdzie zrobić Porządki. -->
+            <fieldset id="ai-pola" class="porzadki-pola">
+              <section class="grupa">
+                <h3 id="ai-polecenie-tytul">Co zrobić</h3>
+                <div class="lista karta-polecenia">
+                  <div class="ai-polecenie">
+                    <input id="ai-polecenie" type="text" placeholder="Napisz polecenie albo wybierz niżej" aria-labelledby="ai-polecenie-tytul" autocomplete="off">
+                    <button id="ai-uruchom" class="zabarwiony" type="submit">Zaproponuj</button>
+                  </div>
+                  <div id="ai-podpowiedzi" class="chipy" aria-label="Przykładowe polecenia"></div>
+                </div>
+              </section>
+              <section class="grupa">
+                <h3 id="ai-zakres-tytul">Których notatek</h3>
+                <div class="chipy wybor" role="radiogroup" aria-labelledby="ai-zakres-tytul">
+                  <label class="chip"><input type="radio" name="ai-zakres" value="wszystkie" checked><span data-napis="Wszystkich">Wszystkich</span></label>
+                  <label class="chip"><input type="radio" name="ai-zakres" value="widok"><span data-napis="Z tego widoku">Z tego widoku</span></label>
+                  <label class="chip"><input type="radio" name="ai-zakres" value="archiwum"><span data-napis="Z archiwum">Z archiwum</span></label>
+                </div>
+              </section>
+            </fieldset>
+          </form>
+          <div id="ai-stan" class="lista ai-stan" role="status" hidden><span class="spinner"></span><span id="ai-stan-tekst"></span><button id="ai-anuluj" type="button">Anuluj</button></div>
+          <section id="ai-plan" class="grupa" hidden>
+            <h3>Propozycje</h3>
+            <p id="ai-podsumowanie"></p>
+            <div id="ai-ostrzezenia" class="caption przygaszony"></div>
+            <div class="ai-dzialania">
+              <label class="chip"><input type="checkbox" id="ai-wszystkie" checked> Zaznacz wszystkie</label>
+              <button id="ai-zastosuj" class="zabarwiony" type="button">Zastosuj wybrane</button>
+            </div>
+            <div id="ai-propozycje" class="lista"></div>
+          </section>
+          <section id="ai-ostatnie" class="grupa" hidden>
+            <h3>Ostatnie zmiany AI</h3>
+            <div id="ai-paczki" class="lista"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="pasek-akcji" class="pasek-akcji" hidden role="toolbar" aria-label="Działania na zaznaczonych"></div>
+
+  <!-- Dolny pasek wąskiego ekranu: przy liście ściąga „i”, liczba notatek i nowa notatka, przy notatce narzędzia tekstu. -->
+  <div id="dol" class="dol">
+    <div class="dol-lista">
+      <button id="info-dol" class="ikona info" type="button" title="Pokaż ściągę" aria-label="Ściąga" aria-haspopup="dialog"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg></button>
+      <span id="licznik-listy" class="caption przygaszony" aria-live="off"></span>
+      <button id="nowa-dol" class="ikona akcent" type="button" title="Utwórz notatkę" aria-label="Nowa notatka"><svg class="i" aria-hidden="true"><use href="#i-nowa"/></svg></button>
+    </div>
+  </div>
+</div>
+
+<input id="plik-obrazu" type="file" accept="image/*" multiple hidden>
+<div id="toasty" class="toasty" aria-live="polite"></div>
+<div id="ogloszenie" class="tylko-czytnik" aria-live="polite"></div>
+
+<dialog id="d-ustawienia" class="ustawienia" aria-labelledby="d-ustawienia-tytul">
+  <header class="dialog-naglowek">
+    <div class="start"><button id="u-wstecz" class="ikona" type="button" title="Wróć do działów" aria-label="Działy ustawień" hidden><svg class="i" aria-hidden="true"><use href="#i-wstecz"/></svg></button></div>
+    <h2 id="d-ustawienia-tytul" class="heading">Ustawienia</h2>
+    <div class="koniec"><button class="ikona" data-zamknij type="button" aria-label="Zamknij ustawienia"><svg class="i" aria-hidden="true"><use href="#i-zamknij"/></svg></button></div>
+  </header>
+  <div class="ustawienia-cialo">
+    <nav id="u-dzialy" class="u-dzialy" aria-label="Działy ustawień"></nav>
+    <div id="ustawienia-tresc" class="dialog-tresc"></div>
+  </div>
+</dialog>
+
+<dialog id="d-historia" class="szeroki" aria-labelledby="d-historia-tytul">
+  <header class="dialog-naglowek">
+    <h2 id="d-historia-tytul" class="heading">Historia wersji</h2>
+    <div class="koniec"><button class="ikona" data-zamknij type="button" aria-label="Zamknij historię"><svg class="i"><use href="#i-zamknij"/></svg></button></div>
+  </header>
+  <div class="dialog-tresc">
+    <div class="historia">
+      <div class="lista historia-lista" id="h-lista" role="listbox" aria-label="Wersje"></div>
+      <div class="historia-podglad" id="h-podglad"></div>
+    </div>
+  </div>
+  <div class="dialog-przyciski">
+    <button id="h-starsza" type="button" title="Pokaż starszą wersję (↓)">Starsza</button>
+    <button id="h-nowsza" type="button" title="Pokaż nowszą wersję (↑)">Nowsza</button>
+    <span class="rozpychacz"></span>
+    <button data-zamknij type="button">Anuluj</button>
+    <button id="h-przywroc" class="sugerowany" type="button">Przywróć tę wersję</button>
+  </div>
+</dialog>
+
+
+<dialog id="d-skroty" class="skroty" aria-labelledby="d-skroty-tytul">
+  <header class="dialog-naglowek">
+    <h2 id="d-skroty-tytul" class="heading">Skróty klawiszowe</h2>
+    <div class="koniec"><button class="ikona" data-zamknij type="button" aria-label="Zamknij"><svg class="i"><use href="#i-zamknij"/></svg></button></div>
+  </header>
+  <div class="dialog-tresc" id="skroty-tresc"></div>
+</dialog>
+
+<!-- Ściąga „i”: bez tytułu i bez zdania o programie, obok pracy (bez zasłony). Zamyka ją X w rogu, Escape, drugie „i”
+     i Wstecz, a klik obok nie. Treść rysuje js/sciaga.js według myszy i systemu. -->
+<dialog id="d-sciaga" class="sciaga" aria-label="Ściąga">
+  <button id="sciaga-zamknij" class="ikona sciaga-zamknij" data-zamknij type="button" aria-label="Zamknij ściągę" autofocus><svg class="i" aria-hidden="true"><use href="#i-zamknij"/></svg></button>
+  <div class="sciaga-tresc" id="sciaga-tresc"></div>
+  <div class="dialog-przyciski" id="sciaga-przyciski">
+    <button id="sciaga-skroty" type="button">Wszystkie skróty</button>
+  </div>
+</dialog>
+
+<dialog id="d-obraz" class="podglad-obrazu" aria-label="Podgląd obrazu">
+  <button id="d-obraz-zamknij" class="ikona podglad-zamknij" data-zamknij type="button" aria-label="Zamknij podgląd"><svg class="i"><use href="#i-zamknij"/></svg></button>
+  <img id="d-obraz-img" alt="">
+  <div id="d-obraz-ocr" class="ocr caption"></div>
+</dialog>
+
+<dialog id="d-logowanie" aria-labelledby="d-logowanie-tytul">
+  <header class="dialog-naglowek">
+    <h2 id="d-logowanie-tytul" class="heading">Połącz z serwerem</h2>
+    <div class="koniec"><button class="ikona" data-zamknij type="button" aria-label="Zamknij"><svg class="i"><use href="#i-zamknij"/></svg></button></div>
+  </header>
+  <form id="logowanie-formularz" class="dialog-tresc">
+    <p class="caption przygaszony">Logujesz się raz na tym urządzeniu. Hasło nie jest zapisywane – urządzenie dostaje własny klucz, który możesz później odwołać</p>
+    <div class="lista">
+      <label class="wiersz"><span>Adres serwera</span><input id="l-adres" type="url" placeholder="https://notatki.example.pl" required autocomplete="url"></label>
+      <label class="wiersz"><span>Hasło</span><input id="l-haslo" type="password" required autocomplete="current-password"></label>
+    </div>
+    <p id="l-blad" class="caption niszczacy" role="alert" hidden></p>
+    <div class="dialog-przyciski bez-odstepu">
+      <button data-zamknij type="button">Anuluj</button>
+      <button class="sugerowany" type="submit" id="l-zaloguj">Połącz</button>
+    </div>
+  </form>
+</dialog>
+
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
